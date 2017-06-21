@@ -9,7 +9,7 @@
         "memo",
         "date"
     ],
-    "version": "0.4.3",
+    "version": "0.5.0",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.5.0"
@@ -118,7 +118,6 @@
                     "default": "# {content}\n\n",
                     "description": "The template string for your notes. "
                 },
-
                 "journal.tpl-memo": {
                     "type": "string",
                     "default": "- MEMO: {content}",
@@ -138,6 +137,16 @@
                     "type": "string",
                     "default": "",
                     "description": "Where to place the tasks. (Default is empty, which means after the header)"
+                },
+                "journal.tpl-todo": {
+                    "type": "string",
+                    "default": "- [ ] TODO: {content}",
+                    "description": "The template string for new todos. "
+                },
+                "journal.tpl-todo-after": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Where to place the todos. (Default is empty, which means after the header)"
                 },
                 "journal.tpl-files": {
                     "type": "string",
