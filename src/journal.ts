@@ -48,7 +48,7 @@ export default class Journal {
     /**
      * Displays a picklist of recent journal pages (with number of open tasks and notes next to it). The user is still able to enter arbirtraty values. 
      * 
-     * Not working yet. 
+     * Not working yet (current API does not support combolists, it's either picklist or input box)
      */
     public openDayByInputOrSelection(): Q.Promise<vscode.TextDocument> {
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -108,8 +108,8 @@ export default class Journal {
             })
             .catch((err) => {
                 if (err != 'cancel') {
-                    let msg = 'Journal: Input not recognized';
-                    console.log("Error: " + err)
+                    let msg = 'Failed to open page. Reason: \"'+err+"\"";
+                    console.log(msg)
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
                 }
