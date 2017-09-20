@@ -1,0 +1,13 @@
+{
+    "task": {
+        "template": "* [ ] TASK: {input}", 
+        "flags": ["todo", "task"]
+    }, 
+
+    "memo": {
+        "template": "- MEMO: {input}", 
+        "flags": ["", "memo"]
+    }
+
+
+}

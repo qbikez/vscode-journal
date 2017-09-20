@@ -1,0 +1,21 @@
+{
+  "name": "vscode-journal-language-server",
+  "description": "Language Server for the VSCode Journal extension.",
+  "version": "0.0.1",
+  "author": "pajoma",
+  "license": "GPL-3.0",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^3.4.2"
+  },
+  "devDependencies": {
+    "typescript": "^2.1.5"
+  },
+  "scripts": {
+		"installServer": "installServerIntoExtension ../out ./package.json ./tsconfig.json",
+		"compile": "installServerIntoExtension ../out ./package.json ./tsconfig.json && tsc -p .",
+		"watch": "installServerIntoExtension ../out ./package.json ./tsconfig.json && tsc -w -p ."
+  }
+}

@@ -22,7 +22,6 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as journal from './util';
-import * as sw from 'agstopwatch'; 
 
 
 /**
@@ -43,7 +42,7 @@ export default class Journal {
         this.parser = new journal.Parser(this.config, this.util);
         this.writer = new journal.Writer(this.config);
         this.reader = new journal.Reader(this.config, this.util);
-        this.vsExt = new journal.VSCode(this.writer);
+        this.vsExt = new journal.VSCode(this.config, this.writer);
     }
 
 

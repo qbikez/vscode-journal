@@ -44,7 +44,10 @@ export class Configuration {
         return (locale.length > 0) ? locale : 'en-US'; 
     }
 
-
+    public isOpenInNewEditorGroup(): boolean {
+        return  this.config.get<boolean>('openInNewEditorGroup'); 
+    }
+    
     public isDevEnabled(): boolean {
         let dev:boolean = this.config.get<boolean>('dev'); 
         return (dev) ? dev : false;  
@@ -94,4 +97,6 @@ export class Configuration {
     public getTodoTemplate() {
         return new TemplateInfo(this.config.get<string>('tpl-todo'), this.config.get<string>('tpl-todo-after'));
     }
+
+
 }

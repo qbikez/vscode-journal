@@ -27,7 +27,7 @@ import * as Q from 'q';
  * 
  */
 export class VSCode {
-    constructor(public writer: journal.Writer) {
+    constructor(public config: journal.Configuration, public writer: journal.Writer) {
 
     }
 
@@ -159,7 +159,9 @@ export class VSCode {
 
         if(textDocument.isDirty) textDocument.save(); 
 
-        vscode.window.showTextDocument(textDocument, 2, false).then(
+        let col = this.config.isOpenInNewEditorGroup() ? 2 : 1; 
+            
+        vscode.window.showTextDocument(textDocument, col, false).then(
             view => {
                 console.log("[Journal]", "Showed file:", textDocument.uri.toString());
                 
