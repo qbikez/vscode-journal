@@ -7,7 +7,11 @@
     "memo": {
         "template": "- MEMO: {input}", 
         "flags": ["", "memo"]
-    }
+    }, 
 
+    "page-header": {
+        "template": "YYYY MM DD"
+    }
+    
 
 }

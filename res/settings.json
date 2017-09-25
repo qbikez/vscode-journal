@@ -1,0 +1,8 @@
+// Workspace settings for journal base directory
+// we use the following filter to prevent displaying the .vscode directory in folder view
+{
+    // The following will hide the js and map files in the editor
+    "files.exclude": {
+        ".vscode": true
+    }
+}

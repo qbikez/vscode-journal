@@ -107,7 +107,7 @@ export default class Journal {
             })
             .catch((err) => {
                 if (err != 'cancel') {
-                    let msg = 'Failed to open page. Reason: \"'+err+"\"";
+                    let msg = 'Failed to open page. Reason: \"' + err + "\"";
                     console.log(msg)
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
@@ -129,7 +129,7 @@ export default class Journal {
             .then(this.vsExt.showDocument)
             .then(deferred.resolve)
             .catch((err) => {
-                let msg = 'Failed to open today\'s page. Reason: '+err;
+                let msg = 'Failed to open today\'s page. Reason: ' + err;
                 vscode.window.showErrorMessage(msg);
                 deferred.reject(msg)
             })
@@ -151,20 +151,34 @@ export default class Journal {
         let date = new Date();
         date.setDate(date.getDate() + offset);
 
-        let tpl: string = this.config.getPageTemplate();
-        let content: string = tpl.replace('{content}', this.util.formatDate(date));
+
         this.util.getFileForDate(date)
             .then((path: string) => {
-                return this.vsExt.loadTextDocument(path);
+                return this.vsExt.loadTextDocument(path)
             })
+
             .catch((path: string) => {
-                return this.vsExt.createSaveLoadTextDocument(path, content);
+                // create a promise in a promise, what could go wrong?
+                let deferred: Q.Deferred<vscode.TextDocument> = Q.defer();
+
+                let date = new Date();
+                date.setDate(date.getDate() + offset);
+
+                this.config.getPageTemplate()
+                    .then((tpl: string) => tpl.replace('{header}', this.util.formatDate(date)))
+                    .then((content) => this.vsExt.createSaveLoadTextDocument(path, content))
+                    .then((doc: vscode.TextDocument) => deferred.resolve(doc));
+
+                return deferred.promise;
+
             })
+
             .then((doc: vscode.TextDocument) => {
-                if(this.config.isDevEnabled()) console.log("[Journal]", "Loaded file:", doc.uri.toString());
+                if (this.config.isDevEnabled()) console.log("[Journal]", "Loaded file:", doc.uri.toString());
                 this.synchronizeReferencedFiles(doc);
                 deferred.resolve(doc);
             })
+
             .catch(reason => {
                 console.log("[Journal]", "Failed to get file, Reason: ", reason);
                 deferred.reject("Failed to open file");
@@ -184,10 +198,10 @@ export default class Journal {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
         let content: string = this.config.getNotesPagesTemplate();
-        let label: string; 
+        let label: string;
         this.vsExt.getUserInput("Enter name for your notes")
             .then((input: string) => {
-                label = input; 
+                label = input;
                 content = content.replace('{content}', input)
                 return this.util.normalizeFilename(input);
             })
@@ -198,12 +212,12 @@ export default class Journal {
                 return this.vsExt.loadTextDocument(path);
             })
             .catch((filename: string) => {
-                if(filename != "cancel") {
+                if (filename != "cancel") {
                     return this.vsExt.createSaveLoadTextDocument(filename, content);
                 } else {
-                    throw "cancel"; 
+                    throw "cancel";
                 }
-                
+
             })
             .then((doc: vscode.TextDocument) => {
                 /* add reference to today's page
@@ -218,7 +232,7 @@ export default class Journal {
                 }); 
                 */
 
-                
+
                 return this.vsExt.showDocument(doc);
             })
             .then((editor: vscode.TextEditor) => {
@@ -336,11 +350,11 @@ export default class Journal {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    if(this.config.isDevEnabled()) console.log("not present: " + file);
+                    if (this.config.isDevEnabled()) console.log("not present: " + file);
                     // construct local reference string
                     this.writer.insertContent(doc, this.config.getNotesTemplate(),
                         ["{label}", this.util.denormalizeFilename(file)],
-                        ["{link}", "./"+this.util.getFileInURI(doc.uri.path)+"/"+file]
+                        ["{link}", "./" + this.util.getFileInURI(doc.uri.path) + "/" + file]
                     );
 
 

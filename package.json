@@ -104,6 +104,11 @@
                     "default": "",
                     "description": "(Mandatatory) The base directory for your notes. "
                 },
+                "journal.extDir": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The base directory for templates and internal configuration. Defaults to '.vscode' within the base directory. "
+                },                
                 "journal.ext": {
                     "type": "string",
                     "default": ".md",

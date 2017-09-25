@@ -12,10 +12,10 @@ import * as vscode from 'vscode';
 import * as myExtension from '../src/extension';
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite("Extension Tests", () => {
+suite("Simple Tests (just playing around)", () => {
 
     // Defines a Mocha unit test
-    test("Something 1", () => {
+    test("Let's fail", () => {
         assert.equal(-1, [1, 2, 3].indexOf(5));
         assert.equal(-1, [1, 2, 3].indexOf(0));
     });

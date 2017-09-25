@@ -3,10 +3,38 @@ import * as assert from 'assert';
 import Journal from '../src/journal'; 
 import * as jrn from '../src/util'; 
 
-
+import * as vscode from 'vscode';
+import * as journalExtension from '../src/extension';
 
 // Defines a Mocha test suite to group tests of similar kind together
 suite("Journal Unit Tests", () => {
+    let wsConfig: vscode.WorkspaceConfiguration;  
+
+
+    test("Activate Journal", () => {
+        wsConfig = vscode.workspace.getConfiguration("journal");
+    })
+
+    test("Load the page template", () => {
+        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
+        return config.getPageTemplate().then( (tpl) => {
+            assert.notEqual(0, tpl.length); 
+            console.log(tpl);
+            
+        });  
+    });
+
+    test("Loading Templates", () => {
+        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
+
+        let param: string = config.getMemoTemplate(); 
+        assert.notEqual(0, param.length);
+
+
+        let info: jrn.TemplateInfo  = config.getNotesTemplate(); 
+        assert.notEqual(null, info);
+
+    }); 
 
     /*
     test("open weekday (\"last wednesday\")", done => {
@@ -22,8 +50,9 @@ suite("Journal Unit Tests", () => {
     */
 
     test("open weekday (\"-1\")", () => {
+       
+        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
         let util:jrn.Util = new jrn.Util(null); 
-        let config:jrn.Configuration = new jrn.Configuration(null); 
         let parser:jrn.Parser = new jrn.Parser(config, util);           
 
 
