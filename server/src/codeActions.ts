@@ -16,6 +16,7 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 'use strict';
+import { ENGINE_METHOD_CIPHERS } from 'constants';
 
 import * as Q from 'q';
 import * as vscode from 'vscode-languageserver';
@@ -29,7 +30,8 @@ export class JournalCodeActions {
     /**
      *
      */
-    constructor() {
+    constructor(public connection: vscode.IConnection, public documents: vscode.TextDocuments) {
+
         this.definitions = [
             { id: 'journal.completeTask', label: "Complete task", action: this.completeTask },
             { id: 'journal.shiftTask', label: "Shift task to today", action: this.shiftTask },
@@ -41,6 +43,34 @@ export class JournalCodeActions {
         this.definitions.forEach((cd: CommandDefinition) => {
             this.commands.set(cd.id, vscode.Command.create(cd.id, cd.action, this));
         });
+
+        this.listen();
+    }
+
+    public listen(): void {
+        this.documents.onDidChangeContent((change) => {
+            let diagnostics: vscode.Diagnostic[] = this.scanDocument(change.document);
+
+            // Send the computed diagnostics to VSCode.
+            this.connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
+        });
+
+        this.connection.onCodeAction(async (param) => {
+            let commands: vscode.Command[] = this.provideCodeActions(param.textDocument, param.range, param.context, null);
+            return commands;
+        });
+
+        this.connection.onExecuteCommand(async (param) => {
+            let args: any = param.arguments; 
+            let cmd: string = param.command; 
+
+            this.definitions.forEach( (entry: CommandDefinition) => {
+                if(entry.action === cmd) {
+                    let method = this.commands.get(entry.id); 
+                    method.arguments = args; 
+                }
+            })
+        }); 
 
     }
 
@@ -106,15 +136,15 @@ export class JournalCodeActions {
         return commands;
     }
 
-    private completeTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
+    public completeTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
         console.log("running code action complete");
     }
 
-    private shiftTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
+    public shiftTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
         console.log("running code action shift");
     }
 
-    private uncompleteTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
+    public uncompleteTask(document: vscode.TextDocument, range: vscode.Range, message: string): any {
         console.log("running code action uncomplete");
     }
 }

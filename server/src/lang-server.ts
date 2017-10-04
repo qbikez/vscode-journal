@@ -19,7 +19,7 @@ let connection: IConnection = createConnection(new IPCMessageReader(process), ne
 // Create a simple text document manager. The text document manager
 // supports full document sync only
 let documents: TextDocuments = new TextDocuments();
-let codeActionsProvider: JournalCodeActions = new JournalCodeActions();
+
 
 
 // Make the text document manager listen on the connection
@@ -36,7 +36,11 @@ connection.onInitialize((params): InitializeResult => {
 			// Tell the client that the server works in FULL text document sync mode
 			textDocumentSync: documents.syncKind,
 			// Tell the client that the server support code complete
-			codeActionProvider: true
+			codeActionProvider: true, 
+
+			executeCommandProvider: {
+				commands: ["journal.completeTask", "journal.shiftTask", "journal.uncompleteTask"]
+			}
 			//,codeActionProvider: true
 		}
 	}
@@ -44,22 +48,9 @@ connection.onInitialize((params): InitializeResult => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent((change) => {
-
-	let diagnostics: Diagnostic[] = codeActionsProvider.scanDocument(change.document);
-
-	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
-
-});
 
 
-connection.onCodeAction(async (param) => {
 
-	let commands: Command[] = codeActionsProvider.provideCodeActions(param.textDocument, param.range, param.context, null);
-
-	return commands;
-});
 
 
 
@@ -91,6 +82,7 @@ function validateTextDocument(textDocument: TextDocument): void {
 
 }
 
+
 connection.onDidChangeWatchedFiles((_change) => {
 	// Monitored files have change in VSCode
 	connection.console.log('We recevied an file change event');
@@ -118,6 +110,10 @@ connection.onDidCloseTextDocument((params) => {
 	connection.console.log(`${params.textDocument.uri} closed.`);
 });
 */
+
+
+let codeActionsProvider: JournalCodeActions = new JournalCodeActions(connection, documents);
+
 // Listen on the connection
 connection.listen();
 

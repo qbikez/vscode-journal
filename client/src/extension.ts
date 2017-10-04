@@ -122,8 +122,8 @@ class JournalStartup {
     public runServer(): void {
 
         // see https://github.com/Microsoft/vscode-languageserver-node-example/blob/master/client/src/extension.ts
-        let serverModule = this.context.asAbsolutePath(path.join('server', 'lang-server.js'));
-        let debugOptions = { execArgv: ["--nolazy", "--debug=6009"] };
+        let serverModule = this.context.asAbsolutePath(path.join('out', 'server', 'lang-server.js'));
+        let debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
 
         let serverOptions: ServerOptions = {
             run: { module: serverModule, transport: TransportKind.ipc },
@@ -138,10 +138,12 @@ class JournalStartup {
             }
         }
 
-        let disposable = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions).start();
+        let client = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions); 
+        let disposable = client.start();
         this.context.subscriptions.push(disposable);
 
-        console.log("vscode-journal Language Server started");
+        console.log("vscode-journal Language Server started. Pushing message");
+        client.info("Testing connection"); 
     }
 
 
