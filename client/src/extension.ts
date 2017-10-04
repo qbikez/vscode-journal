@@ -15,13 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+import * as vscode from 'vscode';
+
+import Journal from './journal';
+import * as journal from './util';
+import * as path from 'path'; 
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient';
 
 'use strict';
 
-import * as vscode from 'vscode';
-import Journal from './journal';
-import * as path from 'path'; 
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind } from 'vscode-languageclient';
+const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'file' };
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -35,13 +38,13 @@ export function activate(context: vscode.ExtensionContext) {
     let journal = new Journal(config);
 
 
-    let startup = new JournalStartup(context, journal); 
-    startup.configureCommands(); 
+    let startup = new JournalStartup(context, journal);
+    startup.configureCommands();
+    // startup.registerProviders();
     startup.runServer(); 
 
-
     // some dev features (stuff where we are waiting for updates in the extension API)
-        if (journal.getConfig().isDevEnabled()) {
+    if (journal.getConfig().isDevEnabled()) {
         context.subscriptions.push(
             vscode.commands.registerCommand('journal.test', function () {
                 // The code you place here will be executed every time your command is executed
@@ -69,14 +72,23 @@ class JournalStartup {
      *
      */
     constructor(public context: vscode.ExtensionContext, public journal: Journal) {
-        
+
     }
 
-    public showError(error: string|Q.Promise<string>) {
+    public showError(error: string | Q.Promise<string>) {
         (<Q.Promise<string>>error).then((value) => {
             // conflict between Q.IPromise and vscode.Thenable
-            vscode.window.showErrorMessage(value);  
-        }); 
+            vscode.window.showErrorMessage(value);
+        });
+    }
+
+    public registerProviders(): void {
+        this.context.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider(MARKDOWN_MODE, new journal.JournalCompletionProvider()),
+            // Vvscode.languages.registerCodeActionsProvider(MARKDOWN_MODE, new journal.JournalCodeActionProvider())
+        );
+
+        new journal.JournalActionsProvider().activate(this.context.subscriptions);
     }
 
     public configureCommands(): void {
@@ -110,11 +122,11 @@ class JournalStartup {
     public runServer(): void {
 
         // see https://github.com/Microsoft/vscode-languageserver-node-example/blob/master/client/src/extension.ts
-        let serverModule = this.context.asAbsolutePath(path.join('out', 'server', 'lang-server.js'));
+        let serverModule = this.context.asAbsolutePath(path.join('server', 'lang-server.js'));
         let debugOptions = { execArgv: ["--nolazy", "--debug=6009"] };
 
-        let serverOptions:  ServerOptions = {
-            run : { module: serverModule, transport: TransportKind.ipc },
+        let serverOptions: ServerOptions = {
+            run: { module: serverModule, transport: TransportKind.ipc },
             debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
         }
 
@@ -129,7 +141,7 @@ class JournalStartup {
         let disposable = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions).start();
         this.context.subscriptions.push(disposable);
 
-        console.log("vscode-journal Language Server started"); 
+        console.log("vscode-journal Language Server started");
     }
 
 

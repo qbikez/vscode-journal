@@ -23,4 +23,5 @@ export { PickDayItem } from './model/pickDayItem';
 export { Parser } from './parser';
 export { Writer } from './writer';
 export { Reader } from './reader';
-export { VSCode } from './vscode';  
+export { VSCode } from './vscode';
+export { JournalCompletionProvider, JournalActionsProvider } from './provider';    

@@ -197,9 +197,15 @@ export default class Journal {
     public createNote(): Q.Promise<vscode.TextEditor> {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
-        let content: string = this.config.getNotesPagesTemplate();
+        // let content: string = this.config.getNotesPagesTemplate();
         let label: string;
-        this.vsExt.getUserInput("Enter name for your notes")
+        let content: string = null; 
+
+        this.config.getNotesPagesTemplate()
+            .then(tplInfo => {
+                content = tplInfo; 
+                return  this.vsExt.getUserInput("Enter name for your notes"); 
+            })
             .then((input: string) => {
                 label = input;
                 content = content.replace('{content}', input)
@@ -352,10 +358,14 @@ export default class Journal {
                 if (m == null) {
                     if (this.config.isDevEnabled()) console.log("not present: " + file);
                     // construct local reference string
-                    this.writer.insertContent(doc, this.config.getNotesTemplate(),
-                        ["{label}", this.util.denormalizeFilename(file)],
-                        ["{link}", "./" + this.util.getFileInURI(doc.uri.path) + "/" + file]
-                    );
+                    this.config.getFileLinkTemplate()
+                        .then(tplInfo => {
+                            this.writer.insertContent(doc, tplInfo,
+                                ["{label}", this.util.denormalizeFilename(file)],
+                                ["{link}", "./" + this.util.getFileInURI(doc.uri.path) + "/" + file]
+                            );
+                        }); 
+                   
 
 
                 }

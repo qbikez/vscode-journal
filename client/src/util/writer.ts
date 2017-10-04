@@ -131,16 +131,30 @@ export class Writer {
 
 
     public writeInputToFile(doc: vscode.TextDocument, pos: vscode.Position, input: journal.Input): Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
         let content: string = "";
         if (input.flags.match("memo")) {
-            content = this.config.getMemoTemplate().replace('{content}', input.memo);
-            return this.writeStringToFile(doc, content, pos);
+            this.config.getMemoTemplate()
+                .then(tplInfo => {
+                    let content = tplInfo.Template.replace('{input}', input.memo);
+                    return this.writeStringToFile(doc, content, pos);
+                }).then(deferred.resolve); 
+
         } else if (input.flags.match("task")) {
-            return this.insertContent(doc, this.config.getTaskTemplate(), ["{content}", input.memo]); 
+            this.config.getTaskTemplate()
+                .then(tplInfo => {
+                    return this.insertContent(doc, tplInfo, ["{input}", input.memo]); 
+                }).then(deferred.resolve);  
+           
         } else if (input.flags.match("todo")){
-            return this.insertContent(doc, this.config.getTodoTemplate(), ["{content}", input.memo]);
+            this.config.getTaskTemplate()
+            .then(tplInfo => {
+                return this.insertContent(doc, tplInfo, ["{content}", input.memo]); 
+            }).then(deferred.resolve); 
         }
-        
+
+        return deferred.promise;
     }
 
 

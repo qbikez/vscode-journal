@@ -33,7 +33,7 @@ export class TemplateInfo {
  */
 export class Configuration {
 
-    private inlineTemplates: string = null; 
+    private inlineTemplates: any = null;
 
     constructor(public config: vscode.WorkspaceConfiguration) {
 
@@ -159,31 +159,58 @@ export class Configuration {
         return deferred.promise;
     }
 
-    private getInlineTemplates(): Q.Promise<string> {
+    private getInlineTemplates(): Q.Promise<any> {
         let deferred: Q.Deferred<string> = Q.defer();
 
 
         this.getConfigPath()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, "journal.inline-templates.json"), "utf-8"))
             .then((data: Buffer) => {
-                deferred.resolve(data.toString()); 
-            }) 
+                this.inlineTemplates = JSON.parse(data.toString());
+                deferred.resolve(this.inlineTemplates);
+            })
             .catch((reason: any) => deferred.reject("Failed to get configuration of inline templates. Reason: " + reason));
         return deferred.promise;
     }
 
-    public getMemoTemplate(): string {
-        this.getIn
+    public getMemoTemplate(): Q.Promise<TemplateInfo> {
+        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
 
-        return this.config.get<string>('tpl-memo');
+        this.getInlineTemplates()
+            .then(val => {
+                let template = val["memo"]["template"];
+                let placeholder = val["memo"]["after"];
+
+                deferred.resolve(new TemplateInfo(template, placeholder));
+            });
+        return deferred.promise;
     }
 
-    public getNotesTemplate(): TemplateInfo {
-        return new TemplateInfo(this.config.get<string>('tpl-files'), this.config.get<string>('tpl-files-after'));
-    }
+    public getFileLinkTemplate(): Q.Promise<TemplateInfo> {
+        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
 
-    public getTaskTemplate(): TemplateInfo {
-        return new TemplateInfo(this.config.get<string>('tpl-task'), this.config.get<string>('tpl-task-after'));
+        this.getInlineTemplates()
+            .then(val => {
+                let template = val["file"]["template"];
+                let placeholder = val["file"]["after"];
+
+                deferred.resolve(new TemplateInfo(template, placeholder));
+            });
+        return deferred.promise;
+    }
+ 
+    public getTaskTemplate():  Q.Promise<TemplateInfo> {
+        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
+
+        this.getInlineTemplates()
+            .then(val => {
+                let template = val["task"]["template"];
+                let placeholder = val["task"]["after"];
+
+                deferred.resolve(new TemplateInfo(template, placeholder));
+            });
+        return deferred.promise;
+
     }
     public getTodoTemplate() {
         return new TemplateInfo(this.config.get<string>('tpl-todo'), this.config.get<string>('tpl-todo-after'));
