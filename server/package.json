@@ -17,7 +17,9 @@
     "q": "^1.5.0"
   },
   "devDependencies": {
-    "typescript": "^2.1.5"
+    "typescript": "^2.1.5",
+    "@types/node": "^7.0.43",
+    "@types/q": "^1.0.5"
   },
   "scripts": {
 		"installServer": "installServerIntoExtension ../client/out ./package.json ./tsconfig.json",

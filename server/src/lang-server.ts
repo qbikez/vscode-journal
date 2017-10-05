@@ -1,3 +1,4 @@
+import { log } from 'util';
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
@@ -33,11 +34,8 @@ connection.onInitialize((params): InitializeResult => {
 	workspaceRoot = params.rootPath;
 	return {
 		capabilities: {
-			// Tell the client that the server works in FULL text document sync mode
 			textDocumentSync: documents.syncKind,
-			// Tell the client that the server support code complete
-			codeActionProvider: true, 
-
+			codeActionProvider: true,
 			executeCommandProvider: {
 				commands: ["journal.completeTask", "journal.shiftTask", "journal.uncompleteTask"]
 			}

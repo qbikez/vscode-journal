@@ -139,14 +139,46 @@ class JournalStartup {
         }
 
         let client = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions); 
+        
+
         let disposable = client.start();
-        this.context.subscriptions.push(disposable);
+        client.onReady().then(() => {
+            this.registerServerCommand(client, "journal.completeTask", "codeActions:completeTask", this.context); 
+            this.context.subscriptions.push(disposable);
+        }); 
 
         console.log("vscode-journal Language Server started. Pushing message");
         client.info("Testing connection"); 
     }
 
-
+    /**
+     * See https://github.com/alanz/vscode-hie-server/blob/master/src/extension.ts for inspiration
+     * 
+     * @param langClient 
+     * @param name 
+     * @param command 
+     * @param context 
+     */
+    private registerServerCommand(langClient: LanguageClient, name: string, command: string, context: vscode.ExtensionContext) {
+        let cmd2 = vscode.commands.registerTextEditorCommand(name, (editor, edit) => {
+            let cmd = {
+                command: command,
+                arguments: [
+                    {
+                        file: editor.document.uri.toString(),
+                        pos: editor.selections[0].active
+                    }
+                ]
+            };
+    
+            langClient.sendRequest("workspace/executeCommand", cmd).then(hints => {
+                return true;
+            }, e => {
+                console.error(e);
+            });
+        });
+        context.subscriptions.push(cmd2)
+    }
 }
 
 
