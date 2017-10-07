@@ -10,7 +10,7 @@ import {
 	Diagnostic, DiagnosticSeverity, InitializeResult, TextDocumentPositionParams, CompletionItem,
 	CompletionItemKind, Range, Position, TextEdit, RemoteWorkspace, RequestHandler, CodeActionParams, Command
 } from 'vscode-languageserver';
-import { JournalCodeActions } from "./codeActions";
+import { JournalCodeActions } from "./capabilities/codeActions";
 
 
 // Create a connection for the server. The connection uses Node's IPC as a transport

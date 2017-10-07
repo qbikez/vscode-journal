@@ -20,8 +20,8 @@ import { defer } from 'Q';
 
 import * as Q from 'q';
 import * as lsp from 'vscode-languageserver';
-
-type CommandDefinition = { id: string, label: string, action: any }
+import { CommandDefinition, WorkspaceUpdates } from './../types'
+import { TaskActions } from "./../documents/taskActions";
 
 
 namespace CommandIds {
@@ -34,24 +34,23 @@ export class JournalCodeActions {
     private definitions: CommandDefinition[];
     private commands: Map<string, lsp.Command> = new Map();
 
+    private taskActions: TaskActions; 
+
     /**
      *
      */
     constructor(public connection: lsp.IConnection, public documents: lsp.TextDocuments) {
+        this.taskActions = new TaskActions(); 
 
-        this.definitions = [
-            { id: 'journal.completeTask', label: "Complete task", action: this.completeTask },
-            { id: 'journal.shiftTask', label: "Shift task to today", action: this.shiftTask },
-            { id: 'journal.uncompleteTask', label: "Reopen this task", action: this.uncompleteTask }
-        ];
-
-
+        this.definitions.concat(this.taskActions.getTaskCommands()); 
         this.definitions.forEach((cd: CommandDefinition) => {
             this.commands.set(cd.id, lsp.Command.create(cd.id, cd.action.name, this));
         });
 
         this.listen();
     }
+
+
 
     public listen(): void {
         this.documents.onDidChangeContent((change) => {
@@ -73,7 +72,7 @@ export class JournalCodeActions {
 
             this.definitions.forEach((entry: CommandDefinition) => {
                 if (entry.id === cmd) {
-                    Q.fcall(this.completeTask, this.connection, ...args)
+                    Q.fcall(this.taskActions.completeTask, this.connection, ...args)
                         .catch((msg) => {
                             this.showClientError(msg);
                         });
@@ -98,37 +97,14 @@ export class JournalCodeActions {
         let lines: string[] = doc.getText().split(/\r?\n/g);
 
         lines.forEach((currentLine, lineNumber) => {
-            this.checkOpenTask(currentLine, lineNumber, diagnostics);
-            this.checkCompletedTask(currentLine, lineNumber, diagnostics);
+            this.taskActions.scanLine(currentLine, lineNumber, diagnostics);
         });
 
         return diagnostics;
     }
 
 
-    private checkCompletedTask(line: string, lineNumber: number, diagnostics: lsp.Diagnostic[]): void {
-
-        let exprString: string = "(\\*)\\s(\\[[x|X]\\])\\s+(.+)"
-        let expr: RegExp = new RegExp(exprString);
-
-        if (expr.test(line)) {
-            let range = lsp.Range.create(lineNumber, 0, lineNumber, line.length);
-            let diag = lsp.Diagnostic.create(range, "Reopen this task", lsp.DiagnosticSeverity.Hint);
-            diagnostics.push(diag);
-        }
-    }
-
-    private checkOpenTask(line: string, lineNumber: number, diagnostics: lsp.Diagnostic[]): void {
-
-        let exprString: string = "(\\*)\\s(\\[\\s{0,1}\\])\\s+(.+)"
-        let expr: RegExp = new RegExp(exprString);
-
-        if (expr.test(line)) {
-            let range = lsp.Range.create(lineNumber, 0, lineNumber, line.length);
-            diagnostics.push(lsp.Diagnostic.create(range, "Complete task", lsp.DiagnosticSeverity.Hint));
-            diagnostics.push(lsp.Diagnostic.create(range, "Shift task to today", lsp.DiagnosticSeverity.Hint));
-        }
-    }
+   
 
 
     public provideCodeActions(document: lsp.TextDocumentIdentifier, range: lsp.Range, context: lsp.CodeActionContext, token: lsp.CancellationToken): lsp.Command[] {
@@ -153,72 +129,7 @@ export class JournalCodeActions {
         return commands;
     }
 
-    public completeTask(connection: lsp.IConnection, document: lsp.TextDocument, range: lsp.Range, message: string): Q.Promise<void> {
-        console.log("running code action complete");
-
-        let deferred: Q.Deferred<void> = Q.defer();
-
-        // see https://github.com/Microsoft/vscode-languageserver-node/blob/master/server/src/main.ts
-
-        // open question, how to do it with apply edit through json rpc
-
-        // : lsp.RequestType<lsp.ApplyWorkspaceEditParams, lsp.ApplyWorkspaceEditResponse void, void>
-
-        Q.fcall(() => {
-            try {
-                let updates = new WorkspaceUpdates();
-
-                let line: number = range.start.line;
-                let replaceRange: lsp.Range = lsp.Range.create(lsp.Position.create(line, 3), lsp.Position.create(line, 4));
-                let completeEdit: lsp.TextEdit = lsp.TextEdit.replace(replaceRange, "x");
-
-                
-                
-                updates.addDocumentUpdate(document, [completeEdit]);
-
-                connection.workspace.applyEdit(updates)
-                    .then((response) => {
-                        if (response.applied) deferred.resolve();
-                        else deferred.reject("Failed to apply remote edits");
-                    });
-
-            } catch (error) {
-                deferred.reject("Unknown Error: " + error);
-            }
-        });
-
-
-
-
-
-        // this.connection.workspace.applyEdit(); 
-
-
-        // this.connection.sendNotification()
-
-        return deferred.promise;
-
-    }
-
-    public shiftTask(document: lsp.TextDocument, range: lsp.Range, message: string): any {
-        console.log("running code action shift");
-    }
-
-    public uncompleteTask(document: lsp.TextDocument, range: lsp.Range, message: string): any {
-        console.log("running code action uncomplete");
-    }
+   
 }
 
 
-export class WorkspaceUpdates implements lsp.WorkspaceEdit {
-    documentChanges?: lsp.TextDocumentEdit[];
-
-    constructor() {
-        this.documentChanges = [];         
-    }
-
-    public addDocumentUpdate(document: lsp.TextDocument, edit: lsp.TextEdit[]) {
-        this.documentChanges.push(lsp.TextDocumentEdit.create(document, edit));
-    }
-
-}
