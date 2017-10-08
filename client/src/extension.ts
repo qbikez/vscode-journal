@@ -29,33 +29,50 @@ const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'fi
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+
+export var journalStartup: JournalStartup; 
 export function activate(context: vscode.ExtensionContext) {
 
-    console.log('vscode-journal is now active!');
+    console.log('vscode-journal is starting!');
 
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
     let journal = new J.Main(config);
 
 
-    let startup = new JournalStartup(context, journal);
-    startup.registerCommands()
-        .then(() => startup.runServer())
-        .then(() => startup.registerViews())
-        .then(() => startup.configureDevMode())
+    journalStartup = new JournalStartup(context, journal);
+    journalStartup.registerCommands()
+        .then(() => journalStartup.runServer())
+        .then(() => journalStartup.registerViews())
+        .then(() => journalStartup.configureDevMode())
+        .then(() => journalStartup.setFinished())
         .catch((error) => {
             console.error(error); 
-            startup.showError(error); 
+            journalStartup.showError(error); 
         }); 
 
 }
 
 class JournalStartup {
+    private progress : Q.Deferred<boolean>; 
+    
     /**
      *
      */
-    constructor(public context: vscode.ExtensionContext, public journal: J.Main) { }
+    constructor(public context: vscode.ExtensionContext, public journal: J.Main) { 
+        this.progress = Q.defer<boolean>();
 
+    }
 
+    public setFinished(): Q.Promise<boolean> {
+        this.progress.resolve(true); 
+
+        return this.progress.promise; 
+    }
+
+    public asPromise(): Q.Promise<boolean> {
+        return this.progress.promise; 
+    }
+    
     public registerProviders(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
@@ -120,11 +137,17 @@ class JournalStartup {
                 vscode.commands.registerCommand('journal.open', () => {
                     _journal.openJournal().catch(error => this.showError(error));
                 }),
+                vscode.commands.registerCommand('journal.config', () => {
+                    _journal.editTemplates().catch(error => this.showError(error));
+                }),
+
+                
             );
 
             deferred.resolve(null);
 
         }, this.context, this.journal);
+        
         return deferred.promise;
 
 

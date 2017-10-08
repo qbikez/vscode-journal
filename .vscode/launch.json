@@ -34,7 +34,7 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}", "--extensionTestsPath=${workspaceRoot}/client/out/test" ],
+            "args": ["--extensionDevelopmentPath=${workspaceRoot}", 	"--extensionTestsPath=${workspaceRoot}/client/out/test" ],
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/client/out/test/**/*.js" ],

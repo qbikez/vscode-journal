@@ -1,6 +1,6 @@
 // Copyright (C) 2016  Patrick Maué
 // 
-// This file is part of vscode-journal.
+//  file is part of vscode-journal.
 // 
 // vscode-journal is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -63,27 +63,42 @@ export function getDayOfWeekForString(day: string): number {
 /**
 * Formats a given Date in long format (for Header in journal pages)
 */
-export function formatDate(date: Date): string {
+export function formatDate(date: Date, locale: string): string {
     let dateFormatOptions: Intl.DateTimeFormatOptions = {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric"
     };
-    return date.toLocaleDateString(this.config.getLocale(), dateFormatOptions);
+    return date.toLocaleDateString(locale, dateFormatOptions);
 }
 
 
 /**
 * Returns target  for notes as string; 
 */
-export function getFilePathInDateFolder(date: Date, filename: string): Q.Promise<string> {
+export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string> {
     let deferred: Q.Deferred<string> = Q.defer<string>();
-    let path = Path.resolve(this.getPathOfMonth(date), this.getDayAsString(date), filename + "." + this.config.getFileExtension());
-    deferred.resolve(path);
+    Q.fcall(() => {
+        let path = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
+        deferred.resolve(path);
+    });
     return deferred.promise;
 }
 
+
+/**
+* Returns the path for a given date as string
+*/
+export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string> {
+    var deferred: Q.Deferred<string> = Q.defer<string>();
+    Q.fcall(() => {
+        let path = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
+        deferred.resolve(path);
+    });
+
+    return deferred.promise;
+}
 
 /**
  * Returns the filename of a given URI. 
@@ -113,30 +128,21 @@ export function getNextLine(content: string): string[] {
     return res;
 }
 
-/**
-* Returns the path for a given date as string
-*/
-export function getEntryPathForDate(date: Date): Q.Promise<string> {
-    var deferred: Q.Deferred<string> = Q.defer<string>();
-    let path = Path.join(this.getPathOfMonth(date), this.getDayAsString(date) + "." + this.config.getFileExtension());
-    deferred.resolve(path);
-    return deferred.promise;
-}
 
 
 
 /**
  * Returns path to month folder. 
  */
-export function getPathOfMonth(date: Date): string {
+export function getPathOfMonth(date: Date, base: string): string {
     let year = date.getFullYear().toString();
-    let month = this.prefixZero(date.getMonth() + 1);
-    return Path.resolve(this.config.getBasePath(), year, month);
+    let month = prefixZero(date.getMonth() + 1);
+    return Path.resolve(base, year, month);
 }
 
 
 export function getDayAsString(date: Date): string {
-    return this.prefixZero(date.getDate());
+    return prefixZero(date.getDate());
 }
 
 /**
@@ -166,12 +172,18 @@ export function normalizeFilename(input: string): Q.Promise<string> {
     return deferred.promise;
 }
 
-export function denormalizeFilename(input: string): string {
+/**
+ * Converts a filename into its readable form (for file links)
+ * 
+ * @param input the line to convert
+ * @param ext the file extension used for notes and journal entries
+ */
+export function denormalizeFilename(input: string, ext: string): string {
     let type: string = input.substring(input.lastIndexOf(".") + 1, input.length);
     input = input.substring(0, input.lastIndexOf("."));
     input = input.replace(/_/g, " ");
 
-    if (type != this.config.getFileExtension()) {
+    if (type != ext) {
         input = "(" + type + ") " + input;
     }
     return input;

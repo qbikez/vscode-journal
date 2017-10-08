@@ -20,13 +20,13 @@ import { defer } from 'Q';
 
 import * as Q from 'q';
 import * as lsp from 'vscode-languageserver';
-import { CommandDefinition, WorkspaceUpdates } from './../types'
+import * as J from '../.'
 
 
 
-export class TaskActions {
+export class Actions {
 
-    public getTaskCommands(): CommandDefinition[] {
+    public getTaskCommands(): J.Types.CommandDefinition[] {
         return [
             { id: 'journal.completeTask', label: "Complete task", action: this.completeTask },
             { id: 'journal.shiftTask', label: "Shift task to today", action: this.completeTask },
@@ -76,7 +76,7 @@ export class TaskActions {
 
         Q.fcall(() => {
             try {
-                let updates = new WorkspaceUpdates();
+                let updates = new J.Types.WorkspaceUpdates();
 
                 let line: number = range.start.line;
                 let replaceRange: lsp.Range = lsp.Range.create(lsp.Position.create(line, 3), lsp.Position.create(line, 4));
@@ -105,7 +105,7 @@ export class TaskActions {
 
         Q.fcall(() => {
             try {
-                let updates = new WorkspaceUpdates();
+                let updates = new J.Types.WorkspaceUpdates();
 
                 let line: number = range.start.line;
                 let replaceRange: lsp.Range = lsp.Range.create(lsp.Position.create(line, 3), lsp.Position.create(line, 4));

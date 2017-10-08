@@ -20,8 +20,7 @@ import { defer } from 'Q';
 
 import * as Q from 'q';
 import * as lsp from 'vscode-languageserver';
-import { CommandDefinition, WorkspaceUpdates } from './../types'
-import { TaskActions } from "./../documents/taskActions";
+import * as J from '../.'
 
 
 namespace CommandIds {
@@ -30,20 +29,20 @@ namespace CommandIds {
 }
 
 
-export class JournalCodeActions {
-    private definitions: CommandDefinition[];
+export class CodeActions {
+    private definitions: J.Types.CommandDefinition[];
     private commands: Map<string, lsp.Command> = new Map();
 
-    private taskActions: TaskActions; 
+    private taskActions: J.Tasks.Actions; 
 
     /**
      *
      */
     constructor(public connection: lsp.IConnection, public documents: lsp.TextDocuments) {
-        this.taskActions = new TaskActions(); 
+        this.taskActions = new J.Tasks.Actions(); 
 
         this.definitions.concat(this.taskActions.getTaskCommands()); 
-        this.definitions.forEach((cd: CommandDefinition) => {
+        this.definitions.forEach((cd: J.Types.CommandDefinition) => {
             this.commands.set(cd.id, lsp.Command.create(cd.id, cd.action.name, this));
         });
 
@@ -70,7 +69,7 @@ export class JournalCodeActions {
             let args: any = param.arguments;
             let cmd: string = param.command;
 
-            this.definitions.forEach((entry: CommandDefinition) => {
+            this.definitions.forEach((entry: J.Types.CommandDefinition) => {
                 if (entry.id === cmd) {
                     Q.fcall(this.taskActions.completeTask, this.connection, ...args)
                         .catch((msg) => {
@@ -111,7 +110,7 @@ export class JournalCodeActions {
         let commands: lsp.Command[] = [];
 
         context.diagnostics.forEach((diag: lsp.Diagnostic) => {
-            this.definitions.forEach((cd: CommandDefinition) => {
+            this.definitions.forEach((cd: J.Types.CommandDefinition) => {
 
                 //  console.log("\"", cd.label, "\"", "<>", "\"", diag.message, "\"", cd.label.localeCompare(diag.message));
                 if (cd.label.localeCompare(diag.message) == 0) {

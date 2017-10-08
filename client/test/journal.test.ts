@@ -16,7 +16,7 @@ suite("Journal Unit Tests", () => {
 
     test("Load the page template", () => {
         let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
-        return config.getPageTemplate().then( (tpl) => {
+        return config.getJournalEntryTemplate().then( (tpl) => {
             assert.notEqual(0, tpl.length); 
         });  
     });
@@ -59,9 +59,9 @@ suite("Journal Unit Tests", () => {
         parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
             date.setDate(date.getDate()+offset[0]);
-            let res = J.Commons.formatDate(date); 
+            let res = J.Commons.formatDate(date, config.getLocale()); 
 
-            console.log("Offset is "+J.Commons.formatDate(date));
+            console.log("Offset is "+J.Commons.formatDate(date,config.getLocale() ));
             assert.equal(true, res.length>0);
              
         }, err => {

@@ -88,6 +88,11 @@
                 "command": "journal.open",
                 "title": "Open the Journal",
                 "category": "Journal"
+            }, 
+            {
+                "command": "journal.config",
+                "title": "Edit journal templates and configuration",
+                "category": "Journal"
             }
         ],
         "views": {

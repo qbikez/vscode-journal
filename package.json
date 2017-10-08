@@ -19,7 +19,8 @@
 	"scripts": {
 		"postinstall": "cd server && npm install && cd ../client && npm install && cd ..",
         "compile": "tsc -p client/tsconfig.json && cd server && npm run installServer && cd .. && tsc -p server/tsconfig.json",
-        "test": "tsc -p server/tsconfig.json", 
+        "test:server": "tsc -p server/tsconfig.json",
+        "test:client": "tsc -p client/tsconfig.json",  
 		"compile:client": "tsc -p client/tsconfig.json",
 		"watch:client": "tsc -w -p client/tsconfig.json",
 		"compile:server": "cd server && npm run installServer && cd .. && tsc -p server/tsconfig.json",

@@ -75,6 +75,17 @@ export default class JournalMain {
     }
 
 
+    public editTemplates(): Q.Promise<vscode.TextEditor> {
+        let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+        this.vsExt.pickConfigToEdit()
+            .then(filepath => this.vsExt.loadTextDocument(filepath))
+            .then(document => this.vsExt.showDocument(document))
+            .then(editor => deferred.resolve(editor))
+            .catch(error => deferred.reject(error))
+
+        return deferred.promise;
+    }
+
 
     /**
      * Opens the editor for a specific day. Supported values are explicit dates (in ISO format),
@@ -107,6 +118,7 @@ export default class JournalMain {
                 if (err != 'cancel') {
                     let msg = 'Failed to open page. Reason: \"' + err + "\"";
                     console.log(msg)
+                    console.error(err);
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
                 }
@@ -150,7 +162,7 @@ export default class JournalMain {
         date.setDate(date.getDate() + offset);
 
 
-        J.Commons.getEntryPathForDate(date)
+        J.Commons.getEntryPathForDate(date, this.config.getBasePath(), this.config.getFileExtension())
             .then((path: string) => {
                 return this.vsExt.loadTextDocument(path)
             })
@@ -161,8 +173,8 @@ export default class JournalMain {
                 let date = new Date();
                 date.setDate(date.getDate() + offset);
 
-                this.config.getPageTemplate()
-                    .then((tpl: string) => tpl.replace('{header}', J.Commons.formatDate(date)))
+                this.config.getJournalEntryTemplate()
+                    .then((tpl: string) => tpl.replace('{header}', J.Commons.formatDate(date, this.config.getLocale())))
                     .then((content) => this.vsExt.createSaveLoadTextDocument(path, content))
                     .then((doc: vscode.TextDocument) => deferred.resolve(doc));
 
@@ -198,7 +210,7 @@ export default class JournalMain {
         let label: string;
         let content: string = null;
 
-        this.config.getNotesPagesTemplate()
+        this.config.getNotesTemplate()
             .then(tplInfo => {
                 content = tplInfo;
                 return this.vsExt.getUserInput("Enter name for your notes");
@@ -209,7 +221,7 @@ export default class JournalMain {
                 return J.Commons.normalizeFilename(input);
             })
             .then((filename: string) => {
-                return J.Commons.getFilePathInDateFolder(new Date(), filename);
+                return J.Commons.getFilePathInDateFolder(new Date(), filename, this.config.getBasePath(), this.config.getFileExtension());
             })
             .then((path: string) => {
                 return this.vsExt.loadTextDocument(path);
@@ -358,7 +370,7 @@ export default class JournalMain {
                     this.config.getFileLinkTemplate()
                         .then(tplInfo => {
                             this.writer.insertContent(doc, tplInfo,
-                                ["{label}", J.Commons.denormalizeFilename(file)],
+                                ["{label}", J.Commons.denormalizeFilename(file, this.config.getFileExtension())],
                                 ["{link}", "./" + J.Commons.getFileInURI(doc.uri.path) + "/" + file]
                             );
                         });

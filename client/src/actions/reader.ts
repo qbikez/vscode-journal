@@ -36,7 +36,7 @@ export class Reader {
 
         var deferred: Q.Deferred<[string]> = Q.defer<[string]>();
 
-        let monthDir = J.Commons.getPathOfMonth(new Date());
+        let monthDir = J.Commons.getPathOfMonth(new Date(), this.config.getBasePath());
         let rexp = new RegExp("^\\d{2}\." + this.config.getFileExtension());
         console.log("reading files in " + monthDir);
 

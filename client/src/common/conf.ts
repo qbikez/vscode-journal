@@ -137,25 +137,41 @@ export class Configuration {
         return (ext.length > 0) ? ext : 'md';
     }
 
+    private configFiles: Map<string,  {detail: string, filename: string}> = null; 
+    public getConfigFileDefinitions(): Map<string, {detail: string, filename: string}> {
+        if(this.configFiles == null) {
+            this.configFiles = new Map();
+            this.configFiles.set("tpl.entry", {detail: "Template for journal entries", filename: "journal.page-template.md" }); 
+            this.configFiles.set("tpl.note", {detail: "Template for notes", filename: "journal.note-template.md" }); 
+            this.configFiles.set("json.templates", {detail: "Inline templates", filename: "journal.inline-templates.json" }); 
+
+            
+        }
+
+        return this.configFiles; 
+
+
+    }
+
     /**
      * Load the page template from the resource directory (in .vscode in workspace)
      */
-    public getPageTemplate(): Q.Promise<string> {
+    public getJournalEntryTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
 
         this.getConfigPath()
-            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, "journal.page-template.md"), "utf-8"))
+            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("tpl.entry").filename), "utf-8"))
             .then((data: Buffer) => deferred.resolve(data.toString()))
             .catch((reason: any) => deferred.reject("Failed to get page template. Reason: " + reason));
         return deferred.promise;
     }
 
 
-    public getNotesPagesTemplate(): Q.Promise<string> {
+    public getNotesTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
 
         this.getConfigPath()
-            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, "journal.note-template.md"), "utf-8"))
+            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("tpl.note").filename), "utf-8"))
             .then((data: Buffer) => deferred.resolve(data.toString()))
             .catch((reason: any) => deferred.reject("Failed to get note template. Reason: " + reason));
         return deferred.promise;
@@ -166,7 +182,7 @@ export class Configuration {
 
 
         this.getConfigPath()
-            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, "journal.inline-templates.json"), "utf-8"))
+            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath,this.getConfigFileDefinitions().get("json.templates").filename), "utf-8"))
             .then((data: Buffer) => {
                 this.inlineTemplates = JSON.parse(data.toString());
                 deferred.resolve(this.inlineTemplates);
