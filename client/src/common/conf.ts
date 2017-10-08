@@ -23,6 +23,7 @@ import * as os from 'os'
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as Q from 'q';
+import * as util from './util'; 
 
 export class TemplateInfo {
     constructor(public Template: string, public After: string) { }
@@ -81,14 +82,14 @@ export class Configuration {
         }
 
 
-        this.checkIfAccessible(configDir)
+        util.checkIfFileIsAccessible(configDir)
             .catch((err) => {
                 return Q.nfcall(fs.mkdir, configDir)
             })
             .then(() => {
                 // check if page template is there
                 let filePath: string = Path.join(configDir, "journal.page-template.md");
-                return this.checkIfAccessible(filePath);
+                return util.checkIfFileIsAccessible(filePath);
             })
             .catch((err) => {
                 // template not there, copy from extension directory
@@ -110,7 +111,7 @@ export class Configuration {
         let deferred: Q.Deferred<void> = Q.defer();
 
         let ext: vscode.Extension<any> = vscode.extensions.getExtension("pajoma.vscode-journal");
-        let source: string = Path.resolve(ext.extensionPath, "res");
+        let source: string = Path.resolve(ext.extensionPath, "res", "configs");
 
         Q.all([
             this.copyTask(source, configDir, "settings.json"),
@@ -148,6 +149,7 @@ export class Configuration {
             .catch((reason: any) => deferred.reject("Failed to get page template. Reason: " + reason));
         return deferred.promise;
     }
+
 
     public getNotesPagesTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
@@ -218,22 +220,7 @@ export class Configuration {
 
 
 
-    /**
-     *  Check if config dir exists, otherwise copy defaults from extension directory
-     *  We can't Q's nfcall, since those nodejs operations don't have (err,data) responses
-     * 
-     *  fs.exists does only return "true", see https://github.com/petkaantonov/bluebird/issues/418
-     *  @param path 
-     */
-    private checkIfAccessible(path: string): Q.Promise<void> {
-        let deferred: Q.Deferred<void> = Q.defer();
-        fs.access(path, (err) => {
-            if (err == null) deferred.resolve(null);
-            else deferred.reject(err.message);
-        });
-        return deferred.promise;
-    }
-
+ 
     /**
      * Copy files from target to source directory (used to initialize configuration directory)
      * 

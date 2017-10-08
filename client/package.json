@@ -43,7 +43,8 @@
         "onCommand:journal.note",
         "onCommand:journal.memo",
         "onCommand:journal.open",
-        "onLanguage:markdown"
+        "onLanguage:markdown", 
+        "onView:journalTasksView"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -89,6 +90,14 @@
                 "category": "Journal"
             }
         ],
+        "views": {
+			"explorer": [
+				{
+					"id": "journalTasksView",
+					"name": "Tasks (Journal)"
+				}
+			]
+		},
         "keybindings": [
             {
                 "command": "journal.day",

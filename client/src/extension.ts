@@ -17,9 +17,10 @@
 // 
 import * as vscode from 'vscode';
 
-import Journal from './journal';
-import * as journal from './util';
-import * as path from 'path'; 
+
+import * as J from './';
+import * as Q from 'q';
+import * as path from 'path';
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient';
 
 'use strict';
@@ -30,40 +31,21 @@ const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'fi
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     console.log('vscode-journal is now active!');
 
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    let journal = new Journal(config);
+    let journal = new J.Main(config);
 
 
     let startup = new JournalStartup(context, journal);
-    startup.configureCommands();
-    // startup.registerProviders();
-    startup.runServer(); 
-
-    // some dev features (stuff where we are waiting for updates in the extension API)
-    if (journal.getConfig().isDevEnabled()) {
-        context.subscriptions.push(
-            vscode.commands.registerCommand('journal.test', function () {
-                // The code you place here will be executed every time your command is executed
-
-                function delayedQuickPickItems() {
-                    return new Promise((resolve, reject) => {
-                        setTimeout(() => resolve(['aaaa', 'bbbb', 'cccc', 'abc', 'bcd']), 2000)
-                    })
-                }
-
-                // Display a message box to the user
-                // vscode.window.showQuickPick(delayedQuickPickItems()).then(x => vscode.window.showInformationMessage(x))
-            }),
-            vscode.commands.registerCommand('journal.day2', () => {
-                // journal.openDayByInputOrSelection().catch(reason => vscode.window.showErrorMessage(reason));
-            })
-        );
-    }
-
+    startup.registerCommands()
+        .then(() => startup.runServer())
+        .then(() => startup.registerViews())
+        .then(() => startup.configureDevMode())
+        .catch((error) => {
+            console.error(error); 
+            startup.showError(error); 
+        }); 
 
 }
 
@@ -71,84 +53,154 @@ class JournalStartup {
     /**
      *
      */
-    constructor(public context: vscode.ExtensionContext, public journal: Journal) {
-
-    }
-
-    public showError(error: string | Q.Promise<string>) {
-        (<Q.Promise<string>>error).then((value) => {
-            // conflict between Q.IPromise and vscode.Thenable
-            vscode.window.showErrorMessage(value);
-        });
-    }
-
-    public registerProviders(): void {
-        this.context.subscriptions.push(
-            vscode.languages.registerCompletionItemProvider(MARKDOWN_MODE, new journal.JournalCompletionProvider()),
-            // Vvscode.languages.registerCodeActionsProvider(MARKDOWN_MODE, new journal.JournalCodeActionProvider())
-        );
-
-        new journal.JournalActionsProvider().activate(this.context.subscriptions);
-    }
-
-    public configureCommands(): void {
-        this.context.subscriptions.push(
-            vscode.commands.registerCommand('journal.today', () => {
-                this.journal.openDay(0).catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.yesterday', () => {
-                this.journal.openDay(-1).catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.tomorrow', () => {
-                this.journal.openDay(1).catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.day', () => {
-                this.journal.openDayByInput().catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.memo', () => {
-                this.journal.openDayByInput().catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.note', () => {
-                this.journal.createNote().catch(error => this.showError(error));
-            }),
-            vscode.commands.registerCommand('journal.open', () => {
-                this.journal.openJournal().catch(error => this.showError(error));
-            }),
+    constructor(public context: vscode.ExtensionContext, public journal: J.Main) { }
 
 
-        );
-    }
+    public registerProviders(): Q.Promise<void> {
+        var deferred: Q.Deferred<void> = Q.defer<void>();
 
-    public runServer(): void {
+        Q.fcall(() => {
+            try {
+                this.context.subscriptions.push(
+                    vscode.languages.registerCompletionItemProvider(MARKDOWN_MODE, new J.Extension.JournalCompletionProvider()),
+                    // Vvscode.languages.registerCodeActionsProvider(MARKDOWN_MODE, new journal.JournalCodeActionProvider())
+                );
 
-        // see https://github.com/Microsoft/vscode-languageserver-node-example/blob/master/client/src/extension.ts
-        let serverModule = this.context.asAbsolutePath(path.join('out', 'server', 'lang-server.js'));
-        let debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
-
-        let serverOptions: ServerOptions = {
-            run: { module: serverModule, transport: TransportKind.ipc },
-            debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
-        }
-
-        let clientOptions: LanguageClientOptions = {
-            documentSelector: ['markdown', 'asciidoc'],
-            synchronize: {
-                configurationSection: 'vscode-journal',
-                fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
+                new J.Extension.JournalActionsProvider().activate(this.context.subscriptions);
+                deferred.resolve(null);
+            } catch (error) {
+                deferred.reject(error);
             }
-        }
 
-        let client = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions); 
-        
+        });
 
-        let disposable = client.start();
-        client.onReady().then(() => {
-            this.registerServerCommand(client, "journal.completeTask", "codeActions:completeTask", this.context); 
-            this.context.subscriptions.push(disposable);
-        }); 
 
-        console.log("vscode-journal Language Server started. Pushing message");
-        client.info("Testing connection"); 
+        return deferred.promise;
+    }
+
+    public registerViews(): Q.Promise<void> {
+        var deferred: Q.Deferred<void> = Q.defer<void>();
+
+        let tasksView: J.Extension.TasksView = new J.Extension.TasksView(this.journal.getConfig());
+
+        tasksView.init()
+            .then(() => {
+                vscode.window.registerTreeDataProvider('journalTasksView', tasksView);
+                deferred.resolve(null);
+            })
+            .catch(deferred.reject);
+
+        return deferred.promise;
+
+    }
+
+    public registerCommands():  Q.Promise<void> {
+        var deferred: Q.Deferred<void> = Q.defer<void>();
+
+        Q.fcall((_context, _journal) => {
+            _context.subscriptions.push(
+                vscode.commands.registerCommand('journal.today', () => {
+                    _journal.openDay(0).catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.yesterday', () => {
+                    _journal.openDay(-1).catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.tomorrow', () => {
+                    _journal.openDay(1).catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.day', () => {
+                    _journal.openDayByInput().catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.memo', () => {
+                    _journal.openDayByInput().catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.note', () => {
+                    _journal.createNote().catch(error => this.showError(error));
+                }),
+                vscode.commands.registerCommand('journal.open', () => {
+                    _journal.openJournal().catch(error => this.showError(error));
+                }),
+            );
+
+            deferred.resolve(null);
+
+        }, this.context, this.journal);
+        return deferred.promise;
+
+
+    }
+
+    public runServer(): Thenable<void> {
+        var deferred: Q.Deferred<void> = Q.defer<void>();
+        Q.fcall((_context, _journal) => {
+            try {
+                // see https://github.com/Microsoft/vscode-languageserver-node-example/blob/master/client/src/extension.ts
+                let serverModule = _context.asAbsolutePath(path.join('out', 'server', 'lang-server.js'));
+                let debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
+
+                let serverOptions: ServerOptions = {
+                    run: { module: serverModule, transport: TransportKind.ipc },
+                    debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
+                }
+
+                let clientOptions: LanguageClientOptions = {
+                    documentSelector: ['markdown', 'asciidoc'],
+                    synchronize: {
+                        configurationSection: 'vscode-journal',
+                        fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
+                    }
+                }
+
+                let client = new LanguageClient('vscode-journal-client', 'VSCode-Journal Client', serverOptions, clientOptions);
+
+
+                let disposable = client.start();
+                client.onReady().then(() => {
+                    this.registerServerCommand(client, "journal.completeTask", "codeActions:completeTask", _context);
+                    _context.subscriptions.push(disposable);
+                });
+
+                console.log("vscode-journal Language Server started. Pushing message");
+                deferred.resolve(null);
+
+            } catch (error) {
+                deferred.reject(error);
+            }
+        },
+            this.context,
+            this.journal
+        );
+
+
+        return deferred.promise;
+    }
+
+    public configureDevMode(): Thenable<void> {
+        var deferred: Q.Deferred<void> = Q.defer<void>();
+
+        Q.fcall((_context, _journal) => {
+            if (_journal.getConfig().isDevEnabled()) {
+                _context.subscriptions.push(
+                    vscode.commands.registerCommand('journal.test', function () {
+                        // The code you place here will be executed every time your command is executed
+
+                        function delayedQuickPickItems() {
+                            return new Promise((resolve, reject) => {
+                                setTimeout(() => resolve(['aaaa', 'bbbb', 'cccc', 'abc', 'bcd']), 2000)
+                            })
+                        }
+
+                        // Display a message box to the user
+                        // vscode.window.showQuickPick(delayedQuickPickItems()).then(x => vscode.window.showInformationMessage(x))
+                    }),
+                    vscode.commands.registerCommand('journal.day2', () => {
+                        // journal.openDayByInputOrSelection().catch(reason => vscode.window.showErrorMessage(reason));
+                    })
+                );
+            }
+
+        }, this.context, this.journal);
+        return deferred.promise;
     }
 
     /**
@@ -170,7 +222,7 @@ class JournalStartup {
                     }
                 ]
             };
-    
+
             langClient.sendRequest("workspace/executeCommand", cmd).then(hints => {
                 return true;
             }, e => {
@@ -179,6 +231,14 @@ class JournalStartup {
         });
         context.subscriptions.push(cmd2)
     }
+
+    public showError(error: string | Q.Promise<string>): void {
+        (<Q.Promise<string>>error).then((value) => {
+            // conflict between Q.IPromise and vscode.Thenable
+            vscode.window.showErrorMessage(value);
+        });
+    }
+
 }
 
 

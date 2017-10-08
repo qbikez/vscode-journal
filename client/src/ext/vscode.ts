@@ -19,15 +19,15 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as journal from '.';
 import * as Q from 'q';
+import * as J from './..'
 
 /** 
  * Anything which extends Visual Studio Code goes here 
  * 
  */
 export class VSCode {
-    constructor(public config: journal.Configuration, public writer: journal.Writer) {
+    constructor(public config: J.Commons.Configuration, public writer: J.Actions.Writer) {
 
     }
 
@@ -56,7 +56,7 @@ export class VSCode {
         return deferred.promise;
     }
 
-    public getUserInputCombo(tip: string, items: Q.Promise<[journal.PickDayItem]>): Q.Promise<string> {
+    public getUserInputCombo(tip: string, items: Q.Promise<[J.Model.PickDayItem]>): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
         let options: vscode.QuickPickOptions = {
@@ -67,7 +67,7 @@ export class VSCode {
 
 
         vscode.window.showQuickPick(items, options)
-            .then((picked: journal.PickDayItem) => {
+            .then((picked: J.Model.PickDayItem) => {
                 if (picked) {
                     deferred.resolve(picked.label);
                 } else {
@@ -79,7 +79,7 @@ export class VSCode {
         return deferred.promise;
     }
 
-    public getUserInputComboSync(tip: string, items: [journal.PickDayItem]): Q.Promise<string> {
+    public getUserInputComboSync(tip: string, items: [J.Model.PickDayItem]): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
         let options: vscode.QuickPickOptions = {
@@ -89,7 +89,7 @@ export class VSCode {
 
 
         vscode.window.showQuickPick(items, options)
-            .then((picked: journal.PickDayItem) => {
+            .then((picked: J.Model.PickDayItem) => {
                 if (picked) {
                     deferred.resolve(picked.label);
                 } else {

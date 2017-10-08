@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as journal from '.'
+import * as J from '../'
 import * as fs from 'fs'
 import * as Q from 'q';
 
@@ -28,7 +28,7 @@ import * as Q from 'q';
  * 
  */
 export class Reader {
-    constructor(public config: journal.Configuration, public util: journal.Util) {
+    constructor(public config: J.Commons.Configuration) {
     }
 
 
@@ -36,7 +36,7 @@ export class Reader {
 
         var deferred: Q.Deferred<[string]> = Q.defer<[string]>();
 
-        let monthDir = this.util.getPathOfMonth(new Date());
+        let monthDir = J.Commons.getPathOfMonth(new Date());
         let rexp = new RegExp("^\\d{2}\." + this.config.getFileExtension());
         console.log("reading files in " + monthDir);
 
@@ -78,10 +78,10 @@ export class Reader {
         // type lineTuple = [string,string]; 
 
         Q.fcall(() => {
-            let day: string = this.util.getFileInURI(doc.uri.toString()); 
-            let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/"+day+"\\/(.*[^\\)])\\)", 'g'); 
-            let match:RegExpExecArray = null; 
-            while( (match = regexp.exec(doc.getText())) != null) {
+            let day: string = J.Commons.getFileInURI(doc.uri.toString());
+            let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
+            let match: RegExpExecArray = null;
+            while ((match = regexp.exec(doc.getText())) != null) {
                 references.push(match[1]);
             }
             deferred.resolve(references);
@@ -103,20 +103,20 @@ export class Reader {
         Q.fcall(() => {
 
             // get base directory of file
-            let p: string = doc.uri.fsPath; 
+            let p: string = doc.uri.fsPath;
 
             // get filename, strip extension, set as notes getFilesInNotesFolder
             p = p.substring(0, p.lastIndexOf("."));
-            
+
             // list all files in directory and put into array
-            fs.readdir(p,  (err, files) => {
-                if(err) {
-                    deferred.resolve; 
+            fs.readdir(p, (err, files) => {
+                if (err) {
+                    deferred.resolve;
                 } else {
-                    deferred.resolve(files); 
+                    deferred.resolve(files);
                 }
-                return; 
-            }); 
+                return;
+            });
 
             // sa
             console.log(p)

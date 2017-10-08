@@ -1,7 +1,6 @@
 'use strict';
 import * as assert from 'assert';
-import Journal from '../src/journal'; 
-import * as jrn from '../src/util'; 
+import * as J from '../src/'; 
 
 import * as vscode from 'vscode';
 import * as journalExtension from '../src/extension';
@@ -16,14 +15,14 @@ suite("Journal Unit Tests", () => {
     })
 
     test("Load the page template", () => {
-        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
+        let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
         return config.getPageTemplate().then( (tpl) => {
             assert.notEqual(0, tpl.length); 
         });  
     });
 
     test("Loading memo template", () => {
-        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
+        let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
 
         return config.getMemoTemplate().then( (tplInfo) => {
             assert.notEqual(0, tplInfo.Template.length); 
@@ -31,7 +30,7 @@ suite("Journal Unit Tests", () => {
     }); 
 
     test("Loading notes template", () => {
-        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
+        let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
 
         return config.getFileLinkTemplate().then( (tplInfo) => {
             assert.notEqual(0, tplInfo.Template.length); 
@@ -53,17 +52,16 @@ suite("Journal Unit Tests", () => {
 
     test("open weekday (\"-1\")", () => {
        
-        let config:jrn.Configuration = new jrn.Configuration(wsConfig); 
-        let util:jrn.Util = new jrn.Util(null); 
-        let parser:jrn.Parser = new jrn.Parser(config, util);           
+        let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
+        let parser:J.Actions.Parser = new J.Actions.Parser(config);           
 
 
         parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
             date.setDate(date.getDate()+offset[0]);
-            let res = util.formatDate(date); 
+            let res = J.Commons.formatDate(date); 
 
-            console.log("Offset is "+util.formatDate(date));
+            console.log("Offset is "+J.Commons.formatDate(date));
             assert.equal(true, res.length>0);
              
         }, err => {

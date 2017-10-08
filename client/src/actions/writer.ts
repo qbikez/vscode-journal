@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as journal from '.'
+import * as J from '../.'
 import * as fs from 'fs'
 import * as Q from 'q';
 
@@ -31,7 +31,7 @@ export class Writer {
 
     private cleanedUpFirstLine: boolean = false; 
 
-    constructor(public config: journal.Configuration) {
+    constructor(public config: J.Commons.Configuration) {
     }
 
 
@@ -54,7 +54,7 @@ export class Writer {
         return deferred.promise;
     }
 
-    public insertContent(doc: vscode.TextDocument, tpl: journal.TemplateInfo, ...values: string[][]): Q.Promise<vscode.TextDocument> {
+    public insertContent(doc: vscode.TextDocument, tpl: J.Commons.TemplateInfo, ...values: string[][]): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         Q.fcall(() => {
@@ -130,7 +130,7 @@ export class Writer {
     }
 
 
-    public writeInputToFile(doc: vscode.TextDocument, pos: vscode.Position, input: journal.Input): Q.Promise<vscode.TextDocument> {
+    public writeInputToFile(doc: vscode.TextDocument, pos: vscode.Position, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         let content: string = "";

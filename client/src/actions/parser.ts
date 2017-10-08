@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Q from 'q';
-import * as journal from '.';
+import * as J from '../.'
 
 /**
  * Helper Methods to interpret the input strings
@@ -27,7 +27,7 @@ export class Parser {
     public today: Date;
     private expr: RegExp = null;
 
-    constructor(public config: journal.Configuration, public util: journal.Util) {
+    constructor(public config: J.Commons.Configuration) {
 
     }
 
@@ -39,15 +39,15 @@ export class Parser {
     /**
     * Takes a string and separates the flag, date and text
     */
-    public tokenize(value: string): Q.Promise<(journal.Input)> {
-        var deferred: Q.Deferred<journal.Input> = Q.defer<journal.Input>();
+    public tokenize(value: string): Q.Promise<(J.Model.Input)> {
+        var deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
         if (value == null) {
             deferred.reject("Invalid input");
             return deferred.promise;
         }
 
-        let input = new journal.Input();
+        let input = new J.Model.Input();
         this.today = new Date();
 
 
@@ -228,7 +228,7 @@ export class Parser {
     public resolveWeekday(mod: string, weekday: string): number {
 
         // get name of weekday in input
-        let searchedDay = this.util.getDayOfWeekForString(weekday);
+        let searchedDay = J.Commons.getDayOfWeekForString(weekday);
         let currentDay: number = this.today.getDay();
         let diff = searchedDay - currentDay;
 
@@ -322,7 +322,7 @@ export class Parser {
             if (tokens.length <= 1) deferred.reject("Malformed input");
 
             // get name of weekday in input
-            let searchedDay = this.util.getDayOfWeekForString(tokens[1]);
+            let searchedDay = J.Commons.getDayOfWeekForString(tokens[1]);
             let currentDay: number = today.getDay();
 
             // toggle mode (next or last)

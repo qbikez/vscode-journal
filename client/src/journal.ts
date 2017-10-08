@@ -1,19 +1,19 @@
 // Copyright (C) 2016  Patrick Maué
 // 
-// This file is part of vscode-journal.
+// This file is part of vscode-Journal.
 // 
-// vscode-journal is free software: you can redistribute it and/or modify
+// vscode-Journal is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 // 
-// vscode-journal is distributed in the hope that it will be useful,
+// vscode-Journal is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 // 
 // You should have received a copy of the GNU General Public License
-// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+// along with vscode-Journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 
@@ -21,33 +21,31 @@
 
 import * as vscode from 'vscode';
 import * as Q from 'q';
-import * as journal from './util';
+import * as J from './'
 
 
 /**
  * Encapsulates everything needed for the Journal extension. 
  */
-export default class Journal {
-    private util: journal.Util;
-    private config: journal.Configuration;
-    private parser: journal.Parser;
-    private writer: journal.Writer;
-    private vsExt: journal.VSCode;
-    private reader: journal.Reader;
+export default class JournalMain {
+    private config: J.Commons.Configuration;
+    private parser: J.Actions.Parser;
+    private writer: J.Actions.Writer;
+    private vsExt: J.Extension.VSCode;
+    private reader: J.Actions.Reader;
 
 
     constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
-        this.config = new journal.Configuration(vscodeConfig);
-        this.util = new journal.Util(this.config);
-        this.parser = new journal.Parser(this.config, this.util);
-        this.writer = new journal.Writer(this.config);
-        this.reader = new journal.Reader(this.config, this.util);
-        this.vsExt = new journal.VSCode(this.config, this.writer);
+        this.config = new J.Commons.Configuration(vscodeConfig);
+        this.parser = new J.Actions.Parser(this.config);
+        this.writer = new J.Actions.Writer(this.config);
+        this.reader = new J.Actions.Reader(this.config);
+        this.vsExt = new J.Extension.VSCode(this.config, this.writer);
     }
 
 
     /**
-     * Displays a picklist of recent journal pages (with number of open tasks and notes next to it). The user is still able to enter arbirtraty values. 
+     * Displays a picklist of recent Journal pages (with number of open tasks and notes next to it). The user is still able to enter arbirtraty values. 
      * 
      * Not working yet (current API does not support combolists, it's either picklist or input box)
      */
@@ -63,7 +61,7 @@ export default class Journal {
             }
             )
             .then((value: string) => this.parser.tokenize(value))
-            .then((input: journal.Input) => this.getPageForDay(input.offset))
+            .then((input: J.Model.Input) => this.getPageForDay(input.offset))
             .then((doc: vscode.TextDocument) => deferred.resolve(doc))
             .catch((err) => {
                 if (err != 'cancel') {
@@ -84,14 +82,14 @@ export default class Journal {
      */
     public openDayByInput(): Q.Promise<vscode.TextEditor> {
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-        let inputVar: journal.Input = null;
+        let inputVar: J.Model.Input = null;
         let docVar: vscode.TextDocument = null;
 
         this.vsExt.getUserInput("Enter day or memo (with flags) ")
             .then((value: string) => {
                 return this.parser.tokenize(value)
             })
-            .then((input: journal.Input) => {
+            .then((input: J.Model.Input) => {
                 inputVar = input;
                 return this.getPageForDay(input.offset)
             })
@@ -152,20 +150,19 @@ export default class Journal {
         date.setDate(date.getDate() + offset);
 
 
-        this.util.getFileForDate(date)
+        J.Commons.getEntryPathForDate(date)
             .then((path: string) => {
                 return this.vsExt.loadTextDocument(path)
             })
 
             .catch((path: string) => {
-                // create a promise in a promise, what could go wrong?
                 let deferred: Q.Deferred<vscode.TextDocument> = Q.defer();
 
                 let date = new Date();
                 date.setDate(date.getDate() + offset);
 
                 this.config.getPageTemplate()
-                    .then((tpl: string) => tpl.replace('{header}', this.util.formatDate(date)))
+                    .then((tpl: string) => tpl.replace('{header}', J.Commons.formatDate(date)))
                     .then((content) => this.vsExt.createSaveLoadTextDocument(path, content))
                     .then((doc: vscode.TextDocument) => deferred.resolve(doc));
 
@@ -180,7 +177,7 @@ export default class Journal {
             })
 
             .catch(reason => {
-                console.log("[Journal]", "Failed to get file, Reason: ", reason);
+                console.error("[Journal]", "Failed to get file, Reason: ", reason);
                 deferred.reject("Failed to open file");
             })
 
@@ -199,20 +196,20 @@ export default class Journal {
 
         // let content: string = this.config.getNotesPagesTemplate();
         let label: string;
-        let content: string = null; 
+        let content: string = null;
 
         this.config.getNotesPagesTemplate()
             .then(tplInfo => {
-                content = tplInfo; 
-                return  this.vsExt.getUserInput("Enter name for your notes"); 
+                content = tplInfo;
+                return this.vsExt.getUserInput("Enter name for your notes");
             })
             .then((input: string) => {
                 label = input;
                 content = content.replace('{content}', input)
-                return this.util.normalizeFilename(input);
+                return J.Commons.normalizeFilename(input);
             })
             .then((filename: string) => {
-                return this.util.getFilePathInDateFolder(new Date(), filename);
+                return J.Commons.getFilePathInDateFolder(new Date(), filename);
             })
             .then((path: string) => {
                 return this.vsExt.loadTextDocument(path);
@@ -259,7 +256,7 @@ export default class Journal {
      * which can be used to quickly write down ToDos without leaving your current 
      * document.
      */
-    public addMemo(input: journal.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+    public addMemo(input: J.Model.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         if (!input.hasMemo() || !input.hasFlags()) deferred.resolve(doc);
@@ -275,7 +272,7 @@ export default class Journal {
 
 
     /**
-     * Called by command 'journal:open'. Opens a new windows with the journal base directory as root. 
+     * Called by command 'Journal:open'. Opens a new windows with the Journal base directory as root. 
      * 
      * 
      */
@@ -295,7 +292,7 @@ export default class Journal {
     /**
      * Configuration parameters for the Journal Extension
      */
-    public getConfig(): journal.Configuration {
+    public getConfig(): J.Commons.Configuration {
         return this.config;
     }
 
@@ -308,7 +305,7 @@ export default class Journal {
     /** 
      * Opens a specific page depending on the input 
 
-    private open(input: journal.Input): Q.Promise<vscode.TextDocument> {
+    private open(input: Journal.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         if (input.hasMemo() && input.hasFlags()) {
@@ -325,14 +322,14 @@ export default class Journal {
     /**
     < * Loads input selection (DEV feature)
      */
-    private gatherSelection(): Q.Promise<[journal.PickDayItem]> {
-        let deferred: Q.Deferred<[journal.PickDayItem]> = Q.defer<[journal.PickDayItem]>();
+    private gatherSelection(): Q.Promise<[J.Model.PickDayItem]> {
+        let deferred: Q.Deferred<[J.Model.PickDayItem]> = Q.defer<[J.Model.PickDayItem]>();
 
-        let res: [journal.PickDayItem] = <[journal.PickDayItem]>new Array();
+        let res: [J.Model.PickDayItem] = <[J.Model.PickDayItem]>new Array();
         this.reader.getPreviousJournalFiles()
             .then(files => {
                 files.forEach(file => {
-                    res.push(new journal.PickDayItem(file, "This is a generic desc"));
+                    res.push(new J.Model.PickDayItem(file, "This is a generic desc"));
                 });
                 deferred.resolve(res);
 
@@ -361,11 +358,11 @@ export default class Journal {
                     this.config.getFileLinkTemplate()
                         .then(tplInfo => {
                             this.writer.insertContent(doc, tplInfo,
-                                ["{label}", this.util.denormalizeFilename(file)],
-                                ["{link}", "./" + this.util.getFileInURI(doc.uri.path) + "/" + file]
+                                ["{label}", J.Commons.denormalizeFilename(file)],
+                                ["{link}", "./" + J.Commons.getFileInURI(doc.uri.path) + "/" + file]
                             );
-                        }); 
-                   
+                        });
+
 
 
                 }
@@ -379,17 +376,4 @@ export default class Journal {
 
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
