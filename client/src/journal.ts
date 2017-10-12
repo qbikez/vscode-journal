@@ -174,7 +174,7 @@ export default class JournalMain {
                 date.setDate(date.getDate() + offset);
 
                 this.config.getJournalEntryTemplate()
-                    .then((tpl: string) => tpl.replace('{header}', J.Commons.formatDate(date, this.config.getLocale())))
+                    .then((tpl: string) => tpl.replace('{{header}}', J.Commons.formatDate(date, this.config.getJournalHeaderTemplate(),  this.config.getLocale())))
                     .then((content) => this.vsExt.createSaveLoadTextDocument(path, content))
                     .then((doc: vscode.TextDocument) => deferred.resolve(doc));
 
@@ -217,7 +217,7 @@ export default class JournalMain {
             })
             .then((input: string) => {
                 label = input;
-                content = content.replace('{content}', input)
+                content = content.replace('{input}', input)
                 return J.Commons.normalizeFilename(input);
             })
             .then((filename: string) => {
@@ -235,7 +235,7 @@ export default class JournalMain {
 
             })
             .then((doc: vscode.TextDocument) => {
-                /* add reference to today's page
+                /* add reference to today's page 
                 this.getPageForDay(0).then((pagedoc: vscode.TextDocument) => {
                     let folder: string = this.util.getFileInURI(pagedoc.uri.path); 
                     let file: string = this.util.getFileInURI(doc.uri.path, true); 
@@ -245,8 +245,8 @@ export default class JournalMain {
                         ["{link}", "./"+folder+"/"+file]
                     );
                 }); 
-                */
-
+               
+ */
 
                 return this.vsExt.showDocument(doc);
             })
@@ -275,7 +275,7 @@ export default class JournalMain {
         else {
             this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
                 .then(doc => deferred.resolve(doc))
-                .catch(() => deferred.reject("Failed to add memo"));
+                .catch((error) => deferred.reject(error));
 
         }
         return deferred.promise;

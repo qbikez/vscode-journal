@@ -25,7 +25,7 @@ suite("Journal Unit Tests", () => {
         let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
 
         return config.getMemoTemplate().then( (tplInfo) => {
-            assert.notEqual(0, tplInfo.Template.length); 
+            assert.notEqual(0, tplInfo.template.length); 
         }); 
     }); 
 
@@ -33,7 +33,7 @@ suite("Journal Unit Tests", () => {
         let config:J.Commons.Configuration = new J.Commons.Configuration(wsConfig); 
 
         return config.getFileLinkTemplate().then( (tplInfo) => {
-            assert.notEqual(0, tplInfo.Template.length); 
+            assert.notEqual(0, tplInfo.template.length); 
         }); 
     }); 
 
@@ -59,9 +59,9 @@ suite("Journal Unit Tests", () => {
         parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
             date.setDate(date.getDate()+offset[0]);
-            let res = J.Commons.formatDate(date, config.getLocale()); 
+            let res = J.Commons.formatDate(date, config.getJournalHeaderTemplate(), config.getLocale()); 
 
-            console.log("Offset is "+J.Commons.formatDate(date,config.getLocale() ));
+            console.log("Offset is "+res);
             assert.equal(true, res.length>0);
              
         }, err => {

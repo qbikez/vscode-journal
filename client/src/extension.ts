@@ -30,10 +30,13 @@ const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'fi
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
-export var journalStartup: JournalStartup; 
+export var journalStartup: JournalStartup;
 export function activate(context: vscode.ExtensionContext) {
 
+    console.time("startup"); 
+
     console.log('vscode-journal is starting!');
+    
 
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
     let journal = new J.Main(config);
@@ -41,38 +44,45 @@ export function activate(context: vscode.ExtensionContext) {
 
     journalStartup = new JournalStartup(context, journal);
     journalStartup.registerCommands()
-        .then(() => journalStartup.runServer())
-        .then(() => journalStartup.registerViews())
+        // .then(() => journalStartup.runServer())
+        // .then(() => journalStartup.registerViews())
         .then(() => journalStartup.configureDevMode())
         .then(() => journalStartup.setFinished())
         .catch((error) => {
-            console.error(error); 
-            journalStartup.showError(error); 
-        }); 
+            console.error(error);
+            journalStartup.showError(error);
+        });
 
+    
+    return {
+        extendMarkdownIt(md: any) {
+            return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
+        }
+    }
 }
 
 class JournalStartup {
-    private progress : Q.Deferred<boolean>; 
-    
+    private progress: Q.Deferred<boolean>;
+
     /**
      *
      */
-    constructor(public context: vscode.ExtensionContext, public journal: J.Main) { 
+    constructor(public context: vscode.ExtensionContext, public journal: J.Main) {
         this.progress = Q.defer<boolean>();
 
     }
 
     public setFinished(): Q.Promise<boolean> {
-        this.progress.resolve(true); 
+        this.progress.resolve(true);    
+        console.timeEnd("startup")
 
-        return this.progress.promise; 
+        return this.progress.promise;
     }
 
     public asPromise(): Q.Promise<boolean> {
-        return this.progress.promise; 
+        return this.progress.promise;
     }
-    
+
     public registerProviders(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
@@ -111,7 +121,7 @@ class JournalStartup {
 
     }
 
-    public registerCommands():  Q.Promise<void> {
+    public registerCommands(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
         Q.fcall((_context, _journal) => {
@@ -141,13 +151,13 @@ class JournalStartup {
                     _journal.editTemplates().catch(error => this.showError(error));
                 }),
 
-                
+
             );
 
             deferred.resolve(null);
 
         }, this.context, this.journal);
-        
+
         return deferred.promise;
 
 
@@ -221,6 +231,7 @@ class JournalStartup {
                     })
                 );
             }
+            deferred.resolve(null); 
 
         }, this.context, this.journal);
         return deferred.promise;

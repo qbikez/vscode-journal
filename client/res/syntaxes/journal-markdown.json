@@ -25,7 +25,7 @@
         "checklist": {
             "patterns": [
                 {
-                    "match": "(\\*)\\s(\\[\\s{0,1}\\])\\s+(.+)", 
+                    "match": "(\\*)\\s(\\[\\s{0,1}\\])\\s+([^   #]+)", 
                     "name": "text.html.markdown.journal.task.open", 
                     "captures": {
                         "1": {

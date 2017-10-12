@@ -7,8 +7,13 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
+			// the folders listed here have to be created manually
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/client"
+				,"--extensionHomePath=${workspaceRoot}/../debug/extensions"
+				// ,"--user-data-dir=${workspaceRoot}/../debug/user-data"
+				,"${workspaceRoot}/../debug/workspace"
+
 			],
 			"stopOnEntry": false,
 			"sourceMaps": true,
@@ -30,15 +35,20 @@
 			"preLaunchTask": "watch:server"
 		},
 		{
-            "name": "Launch Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}", 	"--extensionTestsPath=${workspaceRoot}/client/out/test" ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/client/out/test/**/*.js" ],
-            "preLaunchTask": "watch:client"
-        }
+			"name": "Launch Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"--extensionTestsPath=${workspaceRoot}/client/out/test"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": true,
+			"outFiles": [
+				"${workspaceRoot}/client/out/test/**/*.js"
+			],
+			"preLaunchTask": "watch:client"
+		}
 	]
 }

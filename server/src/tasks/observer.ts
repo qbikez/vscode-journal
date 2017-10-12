@@ -21,17 +21,40 @@ import { defer } from 'Q';
 import * as Q from 'q';
 import * as lsp from 'vscode-languageserver';
 import * as J from '../.'
+import * as Path from 'path';
 
 
 
 export class Observer {
 
     constructor() {
+        
+
 
     }
 
     public init(): void {
-        
+        // get path to config directory
+
+        // load the tasks json, if it doesn't exist create it
+
+        // if it exists, load json into type structure (array)
+
+        // go back starting with last day of this week 
+
+        // for each file check if it contains  tasks
+
+        // for each open task, check if it exits in tasks.json
+
+            // if not, add it to json
+
+        // for each closed or shifted task, check if if is in tasks.json, if yes, remove it
+
+    }
+
+
+    public monitor(): void {
+        // start monitoring
     }
 
 }

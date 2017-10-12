@@ -1,0 +1,38 @@
+ {
+    "defaults": {
+        "note": {
+            "templates": {
+                "header": {
+                    "template": "${input}"
+                }
+            }, 
+            "path": "${base}/yyyy/mm/dd/", 
+            "file": "${input}.md"
+        }, 
+        "entry": {
+            "templates": {
+                "header": {
+                    "template": "dddd, LL"
+                }, 
+                "task": {
+                    "template": "* [ ] ${input}", 
+                    "after": "*Tasks*"
+                }, 
+                "memo": {
+                    "template": "* ${input}", 
+                    "after": ""
+                }
+            }, 
+            "path": "${base}/yyyy/mm/", 
+            "file": "dd.md"
+        }
+    }, 
+    "scopes": {
+        "not-supported-yet": {
+            "note": {
+
+            }
+        } 
+        
+    }
+ }

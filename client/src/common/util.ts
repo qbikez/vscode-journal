@@ -21,6 +21,7 @@ import * as Q from 'q';
 import * as journal from './';
 import * as Path from 'path';
 import * as fs from 'fs';
+import * as moment from 'moment'; 
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -63,7 +64,11 @@ export function getDayOfWeekForString(day: string): number {
 /**
 * Formats a given Date in long format (for Header in journal pages)
 */
-export function formatDate(date: Date, locale: string): string {
+export function formatDate(date: Date, format: string,  locale: string): string {
+    moment.locale(locale); 
+    let now = moment(date).format(format); 
+    /*
+
     let dateFormatOptions: Intl.DateTimeFormatOptions = {
         weekday: "long",
         year: "numeric",
@@ -71,6 +76,8 @@ export function formatDate(date: Date, locale: string): string {
         day: "numeric"
     };
     return date.toLocaleDateString(locale, dateFormatOptions);
+    */
+    return now; 
 }
 
 

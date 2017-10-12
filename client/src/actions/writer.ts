@@ -59,17 +59,17 @@ export class Writer {
 
         Q.fcall(() => {
             // construct content to insert
-            let content: string = tpl.Template;
+            let content: string = tpl.template;
             values.forEach((val: string[]) => {
                 content = content.replace(val[0], val[1]);
             })
 
             // if (tpl-after) is empty, we will inject directly after header
             let position: vscode.Position = null; 
-            if (tpl.After.length == 0) {
+            if (tpl.after.length == 0) {
                 return [content, position]; 
             } else {
-                let offset: number = doc.getText().indexOf(tpl.After);
+                let offset: number = doc.getText().indexOf(tpl.after);
                 // if after string is not found, we default to after header
                 if(offset > 0) {
                     position = doc.validatePosition(doc.positionAt(offset).translate(1,0)); 
@@ -137,21 +137,24 @@ export class Writer {
         if (input.flags.match("memo")) {
             this.config.getMemoTemplate()
                 .then(tplInfo => {
-                    let content = tplInfo.Template.replace('{input}', input.memo);
+                    let content = tplInfo.template.replace('${input}', input.memo);
                     return this.writeStringToFile(doc, content, pos);
-                }).then(deferred.resolve); 
+                }).then(deferred.resolve)
+                .catch((err) => deferred.reject(err));  
 
         } else if (input.flags.match("task")) {
             this.config.getTaskTemplate()
                 .then(tplInfo => {
-                    return this.insertContent(doc, tplInfo, ["{input}", input.memo]); 
-                }).then(deferred.resolve);  
+                    return this.insertContent(doc, tplInfo, ["${input}", input.memo]); 
+                }).then(deferred.resolve)
+                .catch((err) => deferred.reject(err));  
            
         } else if (input.flags.match("todo")){
             this.config.getTaskTemplate()
             .then(tplInfo => {
-                return this.insertContent(doc, tplInfo, ["{content}", input.memo]); 
-            }).then(deferred.resolve); 
+                return this.insertContent(doc, tplInfo, ["${input}", input.memo]); 
+            }).then(deferred.resolve)
+            .catch((err) => deferred.reject(err));  
         }
 
         return deferred.promise;

@@ -15,18 +15,43 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+import { log } from 'util';
+import { create } from 'domain';
 
 'use strict';
 
 import * as vscode from 'vscode';
-import * as os from 'os'
+import * as os from 'os';
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as Q from 'q';
-import * as util from './util'; 
+import * as util from './util';
 
 export class TemplateInfo {
-    constructor(public Template: string, public After: string) { }
+    public template: string;
+    public flags: string[];
+    public after: string;
+
+    constructor() { }
+
+    static create(_template: string, _flags: string[], _after: string): TemplateInfo {
+        let ti: TemplateInfo = new TemplateInfo();
+        ti.template = _template;
+        ti.flags = _flags;
+        ti.after = _after;
+
+        return ti;
+    }
+
+    static createFromJson(val: any): TemplateInfo {
+        let ti: TemplateInfo = new TemplateInfo();
+        if (val) {
+            ti.template = val["template"];
+            ti.flags = val["flags"];
+            ti.after = val["after"];
+        }
+        return ti;
+    }
 }
 
 /**
@@ -72,7 +97,7 @@ export class Configuration {
     public getConfigPath(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
 
-        let configDir = this.config.get<string>('extDir');
+        let configDir = this.config.get<string>('configFiles');
 
         if (configDir != null && configDir.length > 0) {
             configDir = Path.resolve(configDir);
@@ -114,10 +139,18 @@ export class Configuration {
         let source: string = Path.resolve(ext.extensionPath, "res", "configs");
 
         Q.all([
-            this.copyTask(source, configDir, "settings.json"),
+
             this.copyTask(source, configDir, "journal.page-template.md"),
             this.copyTask(source, configDir, "journal.note-template.md"),
             this.copyTask(source, configDir, "journal.inline-templates.json"),
+            Q.fcall(() => {
+                // we only copy the new settings file if one doesn't exist
+                util.checkIfFileIsAccessible(Path.join(configDir, "settings.json"))
+                    .catch(() => {
+                        this.copyTask(source, configDir, "settings.json")
+                    })
+            })
+
         ]
         )
             .then(() => deferred.resolve(null))
@@ -137,18 +170,18 @@ export class Configuration {
         return (ext.length > 0) ? ext : 'md';
     }
 
-    private configFiles: Map<string,  {detail: string, filename: string}> = null; 
-    public getConfigFileDefinitions(): Map<string, {detail: string, filename: string}> {
-        if(this.configFiles == null) {
+    private configFiles: Map<string, { detail: string, filename: string }> = null;
+    public getConfigFileDefinitions(): Map<string, { detail: string, filename: string }> {
+        if (this.configFiles == null) {
             this.configFiles = new Map();
-            this.configFiles.set("tpl.entry", {detail: "Template for journal entries", filename: "journal.page-template.md" }); 
-            this.configFiles.set("tpl.note", {detail: "Template for notes", filename: "journal.note-template.md" }); 
-            this.configFiles.set("json.templates", {detail: "Inline templates", filename: "journal.inline-templates.json" }); 
+            this.configFiles.set("tpl.entry", { detail: "Template for journal entries", filename: "journal.page-template.md" });
+            this.configFiles.set("tpl.note", { detail: "Template for notes", filename: "journal.note-template.md" });
+            this.configFiles.set("json.templates", { detail: "Inline templates", filename: "journal.inline-templates.json" });
+            this.configFiles.set("config", { detail: "Journal Configuration", filename: "journal.config.json" });
 
-            
         }
 
-        return this.configFiles; 
+        return this.configFiles;
 
 
     }
@@ -166,6 +199,10 @@ export class Configuration {
         return deferred.promise;
     }
 
+    public getJournalHeaderTemplate(): string {
+        return "dddd, LL";
+    }
+
 
     public getNotesTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
@@ -177,30 +214,57 @@ export class Configuration {
         return deferred.promise;
     }
 
+    public getJournalConfig(): Q.Promise<any> {
+        let deferred: Q.Deferred<any> = Q.defer();
+        this.getConfigPath()
+            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("config").filename), "utf-8"))
+            .then((data: Buffer) => {
+                // strip comments
+                let json: string = "";
+                data.toString().split("\n").forEach(line => {
+                    if (!line.trim().startsWith("//")) json = json.concat(line);
+                });
+                this.inlineTemplates = JSON.parse(json);
+                deferred.resolve(this.inlineTemplates);
+            })
+            .catch((reason: any) => deferred.reject("Failed to get journal configuration. Reason: " + reason));
+        return deferred.promise;
+    }
+
     private getInlineTemplates(): Q.Promise<any> {
         let deferred: Q.Deferred<string> = Q.defer();
 
 
         this.getConfigPath()
-            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath,this.getConfigFileDefinitions().get("json.templates").filename), "utf-8"))
+            .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("json.templates").filename), "utf-8"))
             .then((data: Buffer) => {
-                this.inlineTemplates = JSON.parse(data.toString());
+                // strip comments
+                let json: string = "";
+                data.toString().split("\n").forEach(line => {
+                    if (!line.trim().startsWith("//")) json = json.concat(line);
+                });
+                this.inlineTemplates = JSON.parse(json);
                 deferred.resolve(this.inlineTemplates);
             })
             .catch((reason: any) => deferred.reject("Failed to get configuration of inline templates. Reason: " + reason));
         return deferred.promise;
     }
 
-    public getMemoTemplate(): Q.Promise<TemplateInfo> {
+    public getMemoTemplate(_scope?: string): Q.Promise<TemplateInfo> {
         let deferred: Q.Deferred<TemplateInfo> = Q.defer();
+        let scope = _scope ? _scope  : "defaults"; 
 
-        this.getInlineTemplates()
+        this.getJournalConfig()
             .then(val => {
-                let template = val["memo"]["template"];
-                let placeholder = val["memo"]["after"];
-
-                deferred.resolve(new TemplateInfo(template, placeholder));
-            });
+                try {
+                    deferred.resolve(TemplateInfo.createFromJson(val[_scope]["entry"]["templates"]["memo"]));     
+                } catch (error) {
+                    deferred.resolve(TemplateInfo.createFromJson(val["defaults"]["entry"]["templates"]["memo"]));
+                }
+            })
+            .catch((err) => {
+                deferred.reject("Failed to load memo template from config for scope:"+scope); 
+            })
         return deferred.promise;
     }
 
@@ -209,34 +273,26 @@ export class Configuration {
 
         this.getInlineTemplates()
             .then(val => {
-                let template = val["file"]["template"];
-                let placeholder = val["file"]["after"];
-
-                deferred.resolve(new TemplateInfo(template, placeholder));
+                deferred.resolve(TemplateInfo.createFromJson(val["file"]));
             });
         return deferred.promise;
     }
- 
-    public getTaskTemplate():  Q.Promise<TemplateInfo> {
+
+    public getTaskTemplate(): Q.Promise<TemplateInfo> {
         let deferred: Q.Deferred<TemplateInfo> = Q.defer();
 
         this.getInlineTemplates()
             .then(val => {
-                let template = val["task"]["template"];
-                let placeholder = val["task"]["after"];
-
-                deferred.resolve(new TemplateInfo(template, placeholder));
-            });
+                deferred.resolve(TemplateInfo.createFromJson(val["task"]));
+            })
+            .catch((err) => deferred.reject(err));
         return deferred.promise;
 
     }
-    public getTodoTemplate() {
-        return new TemplateInfo(this.config.get<string>('tpl-todo'), this.config.get<string>('tpl-todo-after'));
-    }
 
 
 
- 
+
     /**
      * Copy files from target to source directory (used to initialize configuration directory)
      * 

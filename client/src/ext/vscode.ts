@@ -170,15 +170,19 @@ export class VSCode {
     public loadTextDocument(path: string): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         let uri = vscode.Uri.file(path);
-
-        vscode.workspace.openTextDocument(uri).then(
-            success => {
-                deferred.resolve(success)
-            },
-            failed => {
-                deferred.reject(path) // return path to reuse it later in createDoc     
-            }
-        );
+        try {
+            vscode.workspace.openTextDocument(uri).then(
+                success => {
+                    deferred.resolve(success)
+                },
+                failed => {
+                    deferred.reject(path) // return path to reuse it later in createDoc     
+                }
+            );
+        } catch (error) {
+            deferred.reject(path); 
+        }
+   
 
         return deferred.promise;
     }

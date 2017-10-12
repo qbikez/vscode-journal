@@ -1,0 +1,56 @@
+/* Variables to use 
+ * {input} - the input entered in the dialog
+ * {file} - the filename (for notes)
+ */
+
+
+defaults:
+    header:
+        note:  
+            template: {input}
+        entry:
+            template: YYYY MM DD
+    task:
+    
+
+{   
+    "header.page": {
+        "template": "{input}"
+    },
+    "header.entry": {
+        "template": "YYYY MM DD"
+    },
+    "task": {
+        // The template string for new tasks.
+        "template": "* [ ] TASK: {input}",
+        // the flags used to mark tasks
+        "flags": [
+            "todo",
+            "task"
+        ],
+        // Where to place the tasks. (Default is empty, which means after the header)
+        "after": "*Task*"
+    },
+    "memo": {
+        // The template string for new memos (new lines). 
+        "template": "* MEMO: {input}",
+        // the flags used to mark memos
+        "flags": [
+            "",
+            "memo"
+        ],
+        // Where to place new memos. (Default is empty, which means after the header)
+        "after": ""
+    },
+    "files": {
+        // The template string for new memos (new lines). 
+        "template": "- NOTE: [{label}]({file})",
+        // the flags used to mark memos
+        "flags": [
+            "",
+            "memo"
+        ],
+        // Where to place the file links to notes and more. (Default is empty, which means after the header)
+        "after": ""
+    }
+}

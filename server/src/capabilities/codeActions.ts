@@ -54,7 +54,7 @@ export class CodeActions {
     public listen(): void {
         this.documents.onDidChangeContent((change) => {
             let diagnostics: lsp.Diagnostic[] = this.scanDocument(change.document);
-
+            
             // Send the computed diagnostics to lsp.
             this.connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
         });
