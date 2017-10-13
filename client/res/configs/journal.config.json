@@ -1,38 +1,42 @@
- {
-    "defaults": {
-        "note": {
-            "templates": {
-                "header": {
-                    "template": "${input}"
-                }
-            }, 
-            "path": "${base}/yyyy/mm/dd/", 
-            "file": "${input}.md"
-        }, 
-        "entry": {
-            "templates": {
-                "header": {
-                    "template": "dddd, LL"
-                }, 
-                "task": {
-                    "template": "* [ ] ${input}", 
-                    "after": "*Tasks*"
-                }, 
-                "memo": {
-                    "template": "* ${input}", 
-                    "after": ""
-                }
-            }, 
-            "path": "${base}/yyyy/mm/", 
-            "file": "dd.md"
-        }
-    }, 
-    "scopes": {
-        "not-supported-yet": {
+{
+    "scopes": [
+        {
+            "name": "default",
             "note": {
-
+                "templates": [
+                    {
+                        "id": "header",
+                        "template": "${input}"
+                    }
+                ],
+                "path": "${base}/yyyy/mm/dd/",
+                "file": "${input}.md"
+            },
+            "entry": {
+                "templates": [
+                    {
+                        "id": "header",
+                        "template": "dddd, LL"
+                    },
+                    {
+                        "id": "task",
+                        "template": "* [ ] ${input}",
+                        "after": "*Tasks*"
+                    },
+                    {
+                        "id": "memo",
+                        "template": "* ${input}",
+                        "after": ""
+                    },
+                    {
+                        "id": "file",
+                        "template": "- NOTE: [{label}]({file})",
+                        "after": "*Links*"
+                    }
+                ],
+                "path": "${base}/yyyy/mm/",
+                "file": "dd.md"
             }
-        } 
-        
-    }
- }
+        }
+    ]
+}

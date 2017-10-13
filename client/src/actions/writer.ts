@@ -54,7 +54,7 @@ export class Writer {
         return deferred.promise;
     }
 
-    public insertContent(doc: vscode.TextDocument, tpl: J.Commons.TemplateInfo, ...values: string[][]): Q.Promise<vscode.TextDocument> {
+    public insertContent(doc: vscode.TextDocument, tpl: J.Commons.InlineTemplate, ...values: string[][]): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         Q.fcall(() => {

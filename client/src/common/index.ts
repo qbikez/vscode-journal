@@ -1,6 +1,6 @@
 export {
     Configuration,
-    TemplateInfo
+    InlineTemplate
 } from './conf';
 
 export {

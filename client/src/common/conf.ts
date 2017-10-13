@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+import { defer } from 'Q';
 import { log } from 'util';
 import { create } from 'domain';
 
@@ -26,6 +27,54 @@ import * as Path from 'path';
 import * as fs from 'fs';
 import * as Q from 'q';
 import * as util from './util';
+
+
+
+
+declare module Config {
+
+    const SCOPE_DEFAULT = "default";
+
+    interface Root {
+        scopes: Scope[];
+    }
+
+    interface Scope {
+        name: string;
+        note: Note;
+        entry: Entry;
+    }
+
+    interface Page {
+        templates: InlineTemplate[];
+        path: string;
+        file: string;
+    }
+
+    interface Note extends Page { }
+    interface Entry extends Page { }
+
+
+}
+
+export interface InlineTemplate {
+    id: string;
+    template: string;
+    after: string;
+}
+
+function findScope(scopes: Config.Scope[], scopeId?: string): Config.Scope {
+    return scopes.find((val: Config.Scope) => {
+        let bool = val.name.startsWith(scopeId ? scopeId : Config.SCOPE_DEFAULT);
+
+        return (val.name.startsWith(scopeId ? scopeId : Config.SCOPE_DEFAULT))
+    });
+}
+function findTemplate(templates: InlineTemplate[], templateId: string, ): InlineTemplate {
+    let result: InlineTemplate = templates.find((val: InlineTemplate) => val.id.startsWith(templateId));
+
+    return result;
+}
 
 export class TemplateInfo {
     public template: string;
@@ -59,7 +108,7 @@ export class TemplateInfo {
  */
 export class Configuration {
 
-    private inlineTemplates: any = null;
+    private inlineTemplates: Config.Root = null;
 
     constructor(public config: vscode.WorkspaceConfiguration) {
 
@@ -214,7 +263,7 @@ export class Configuration {
         return deferred.promise;
     }
 
-    public getJournalConfig(): Q.Promise<any> {
+    public getJournalConfig(): Q.Promise<Config.Root> {
         let deferred: Q.Deferred<any> = Q.defer();
         this.getConfigPath()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("config").filename), "utf-8"))
@@ -224,13 +273,18 @@ export class Configuration {
                 data.toString().split("\n").forEach(line => {
                     if (!line.trim().startsWith("//")) json = json.concat(line);
                 });
-                this.inlineTemplates = JSON.parse(json);
-                deferred.resolve(this.inlineTemplates);
+
+
+                let tpl: Config.Root = JSON.parse(json);
+
+                this.inlineTemplates = tpl;
+                deferred.resolve(tpl);
             })
             .catch((reason: any) => deferred.reject("Failed to get journal configuration. Reason: " + reason));
         return deferred.promise;
     }
 
+    /*
     private getInlineTemplates(): Q.Promise<any> {
         let deferred: Q.Deferred<string> = Q.defer();
 
@@ -248,42 +302,60 @@ export class Configuration {
             })
             .catch((reason: any) => deferred.reject("Failed to get configuration of inline templates. Reason: " + reason));
         return deferred.promise;
-    }
+    }*/
 
-    public getMemoTemplate(_scope?: string): Q.Promise<TemplateInfo> {
-        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
-        let scope = _scope ? _scope  : "defaults"; 
+    public getMemoTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+        let deferred: Q.Deferred<InlineTemplate> = Q.defer();
 
         this.getJournalConfig()
             .then(val => {
-                try {
-                    deferred.resolve(TemplateInfo.createFromJson(val[_scope]["entry"]["templates"]["memo"]));     
-                } catch (error) {
-                    deferred.resolve(TemplateInfo.createFromJson(val["defaults"]["entry"]["templates"]["memo"]));
+                let scope: Config.Scope = findScope(val.scopes, _scopeId);
+                let tpl: InlineTemplate = findTemplate(scope.entry.templates, "memo");
+
+                // template not found? fall back to default
+                if (!tpl) {
+                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "memo");
                 }
+
+                deferred.resolve(tpl); 
             })
-            .catch((err) => {
-                deferred.reject("Failed to load memo template from config for scope:"+scope); 
-            })
+            .catch((err) => deferred.reject(err));
         return deferred.promise;
     }
 
-    public getFileLinkTemplate(): Q.Promise<TemplateInfo> {
-        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
+    public getFileLinkTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+        let deferred: Q.Deferred<InlineTemplate> = Q.defer();
 
-        this.getInlineTemplates()
+        this.getJournalConfig()
             .then(val => {
-                deferred.resolve(TemplateInfo.createFromJson(val["file"]));
-            });
+                let scope: Config.Scope = findScope(val.scopes, _scopeId);
+                let tpl: InlineTemplate = findTemplate(scope.entry.templates, "file");
+
+                // template not found? fall back to default
+                if (!tpl) {
+                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "file");
+                }
+
+                deferred.resolve(tpl);
+            })
+            .catch((err) => deferred.reject(err));
         return deferred.promise;
     }
 
-    public getTaskTemplate(): Q.Promise<TemplateInfo> {
-        let deferred: Q.Deferred<TemplateInfo> = Q.defer();
+    public getTaskTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+        let deferred: Q.Deferred<InlineTemplate> = Q.defer();
 
-        this.getInlineTemplates()
+        this.getJournalConfig()
             .then(val => {
-                deferred.resolve(TemplateInfo.createFromJson(val["task"]));
+                let scope: Config.Scope = findScope(val.scopes, _scopeId);
+                let tpl: InlineTemplate = findTemplate(scope.entry.templates, "task");
+
+                // template not found? fall back to default
+                if (!tpl) {
+                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "task");
+                }
+
+                deferred.resolve(tpl);
             })
             .catch((err) => deferred.reject(err));
         return deferred.promise;
