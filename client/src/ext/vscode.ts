@@ -77,9 +77,9 @@ export class VSCode {
                 .then((picked) => {
                     if (!picked) deferred.reject("cancel");
 
-                    this.config.getConfigPath()
+                    this.config.getTemplatesDirectory()
                         .then((path) => {
-                            deferred.resolve( Path.join(path, map.get(picked)));
+                            deferred.resolve(Path.join(path, map.get(picked)));
                         });
                 });
         });
@@ -152,12 +152,12 @@ export class VSCode {
                 } else {
                     deferred.resolve(doc);
                 }
-
-                console.log('[Journal]', 'Created file: ', doc.uri.toString());
+                
+                // console.log('[Journal]', 'Created file: ', doc.uri.toString());
             },
             failed => {
-                console.log("Failed to create file: ", uri.toString());
-                deferred.reject("Failed to create file.");
+                console.error("[Journal] Failed to create file: ", uri.toString(), failed);
+                deferred.reject(failed);
             }
             );
 
@@ -180,9 +180,9 @@ export class VSCode {
                 }
             );
         } catch (error) {
-            deferred.reject(path); 
+            deferred.reject(path);
         }
-   
+
 
         return deferred.promise;
     }

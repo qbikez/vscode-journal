@@ -131,66 +131,56 @@
           "default": "",
           "description": "(Mandatatory) The base directory for your notes. "
         },
-        "journal.configFiles": {
+        "journal.templates-directory": {
           "type": "string",
-          "default": "",
+          "default": "${journalFolder}/.vscode",
           "description": "The base directory for templates and internal configuration. Defaults to '.vscode' within the base directory. "
         },
-        "journal.ext": {
-          "type": "string",
-          "default": ".md",
-          "description": "The default extension of your notes. "
+        "journal.file-patterns": {
+          "type": "array",
+          "description": "Patterns for filenames and paths",
+          "default": [
+            {
+              "scope": "default.note",
+              "path": "${journalFolder}/${date:yyyy}/${date:mm}/${date:dd}/",
+              "file": "${input}.md"
+            },
+            {
+              "scope": "default.entry",
+              "path": "${journalFolder}/${date:yyyy}/${date:mm}/",
+              "file": "dd.md"
+            }
+          ]
         },
-        "journal.tpl-page": {
-          "type": "string",
-          "default": "# {content}\n\n",
-          "description": "The template string for your daily journal pages. "
+        "journal.inline-templates": {
+          "type": "array",
+          "description": "Inline templates for tasks, memos and more",
+          "default": [
+            {
+              "scope": "default.note.header",
+              "template": "${input}"
+            },
+            {
+              "scope": "default.entry.header",
+              "template": "dddd, LL"
+            },
+            {
+              "scope": "default.entry.task",
+              "template": "* [ ] ${input}",
+              "after": "*Tasks*"
+            },
+            {
+              "scope": "default.entry.memo",
+              "template": "* ${input}"
+            },
+            {
+              "scope": "default.entry.file",
+              "template": "- NOTE: [{label}]({file})",
+              "after": "*Links*"
+            }
+          ]
         },
-        "journal.tpl-note": {
-          "type": "string",
-          "default": "# {content}\n\n",
-          "description": "The template string for your notes. "
-        },
-        "journal.tpl-memo": {
-          "type": "string",
-          "default": "- MEMO: {content}",
-          "description": "The template string for new memos (new lines). "
-        },
-        "journal.tpl-memo-after": {
-          "type": "string",
-          "default": "",
-          "description": "Where to place new memos. (Default is empty, which means after the header)"
-        },
-        "journal.tpl-task": {
-          "type": "string",
-          "default": "- [ ] TASK: {content}",
-          "description": "The template string for new tasks. "
-        },
-        "journal.tpl-task-after": {
-          "type": "string",
-          "default": "",
-          "description": "Where to place the tasks. (Default is empty, which means after the header)"
-        },
-        "journal.tpl-todo": {
-          "type": "string",
-          "default": "- [ ] TODO: {content}",
-          "description": "The template string for new todos. "
-        },
-        "journal.tpl-todo-after": {
-          "type": "string",
-          "default": "",
-          "description": "Where to place the todos. (Default is empty, which means after the header)"
-        },
-        "journal.tpl-files": {
-          "type": "string",
-          "default": "- NOTE: [{label}]({link})",
-          "description": "Template for the link to notes"
-        },
-        "journal.tpl-files-after": {
-          "type": "string",
-          "default": "",
-          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
-        },
+  
         "journal.locale": {
           "type": "string",
           "default": "",

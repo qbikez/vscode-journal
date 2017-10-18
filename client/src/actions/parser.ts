@@ -42,45 +42,49 @@ export class Parser {
     public tokenize(value: string): Q.Promise<(J.Model.Input)> {
         var deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
-        if (value == null) {
-            deferred.reject("Invalid input");
-            return deferred.promise;
-        }
-
-        let input = new J.Model.Input();
-        this.today = new Date();
-
-
-        let res: RegExpMatchArray = this.split(value);
-        if (this.config.isDevEnabled()) console.log(JSON.stringify(res));
-
-        input.flags = this.getFlags(res);
-        input.offset = this.getOffset(res);
-        input.memo = this.getText(res);
-
-        // flags but no text, show error
-        if (input.hasFlags() && !input.hasMemo()) {
-            deferred.reject("No text found for memo");
-            return deferred.promise;
-        }
-
-        // text but no flags, we default to "memo"
-        if (!input.hasFlags() && input.hasMemo()) {
-            // but only if exceeds a certain length
-            if (input.memo.length > 6) {
-                input.flags = "memo"
+        Q.fcall((inputStr) => {
+            if (value == null) {
+                deferred.reject("Invalid input");
             }
-        }
 
-        // if not temporal modifier in input, but flag and text, we default to today
-        if (!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
-            input.offset = 0;
-        }
+            try {
+                let input = new J.Model.Input();
+                this.today = new Date();
 
-        deferred.resolve(input);
+                let res: RegExpMatchArray = this.split(value);
+                if (this.config.isDevEnabled()) console.log(JSON.stringify(res));
 
-        if (this.config.isDevEnabled()) console.log(JSON.stringify(input));
+                input.flags = this.getFlags(res);
+                input.offset = this.getOffset(res);
+                input.memo = this.getText(res);
 
+                // flags but no text, show error
+                if (input.hasFlags() && !input.hasMemo()) {
+                    deferred.reject("No text found for memo");
+                    return deferred.promise;
+                }
+
+                // text but no flags, we default to "memo"
+                if (!input.hasFlags() && input.hasMemo()) {
+                    // but only if exceeds a certain length
+                    if (input.memo.length > 6) {
+                        input.flags = "memo"
+                    }
+                }
+
+                // if not temporal modifier in input, but flag and text, we default to today
+                if (!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
+                    input.offset = 0;
+                }
+
+                deferred.resolve(input);
+
+                if (this.config.isDevEnabled()) console.log(JSON.stringify(input));
+
+            } catch (error) {
+                deferred.reject(error); 
+            }
+        }, value);
 
         return deferred.promise;
     }

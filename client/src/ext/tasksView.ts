@@ -60,7 +60,7 @@ export class TasksView implements vscode.TreeDataProvider<TaskInView> {
     checkIfTaskFilePresent(_view: TasksView): Q.Promise<boolean> {
         var deferred: Q.Deferred<boolean> = Q.defer<boolean>();
 
-        this.config.getConfigPath()
+        this.config.getTemplatesDirectory()
             .then(configPath => J.Commons.checkIfFileIsAccessible(Path.join(configPath, "tasks.json")))
             .then(() => deferred.resolve(true))
             .catch(error => {
@@ -83,7 +83,7 @@ export class TasksView implements vscode.TreeDataProvider<TaskInView> {
 
         if(!taskFilePresent) deferred.resolve(null); 
         else {
-            this.config.getConfigPath()
+            this.config.getTemplatesDirectory()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, "tasks.json"), "utf-8"))
             .catch(error => {
 

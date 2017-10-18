@@ -15,7 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+import { JournalCommands } from './commands';
 
 export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
 export { VSCode } from './vscode';
 export { TasksView } from './tasksView'; 
+export { Commands, JournalCommands} from './commands'; 

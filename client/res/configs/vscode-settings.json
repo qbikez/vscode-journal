@@ -1,0 +1,40 @@
+{
+    "journal.file-patterns": [
+        {
+            "scope": "default.note",
+            "path": "",
+            "file": ""
+        },
+        {
+            "scope": "default.entry",
+            "path": "",
+            "file": ""
+        }
+    ],
+    "journal.inline-templates": [
+        {
+            "scope": "default.note.header",   
+            "template": "${input}"
+        }, 
+        {
+            "scope": "default.entry.header",   
+            "template": "dddd, LL"
+        }, 
+        {
+            "scope": "default.entry.task",   
+            "template": "* [ ] ${input}",
+            "after": "*Tasks*"
+
+        }, 
+        {
+            "scope": "default.entry.memo",   
+            "template": "* ${input}"
+        }, 
+        {
+            "scope": "default.entry.file",   
+            "template": "- NOTE: [{label}]({file})",
+            "after": "*Links*"
+
+        }
+    ]
+}

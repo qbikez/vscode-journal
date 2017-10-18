@@ -25,10 +25,5 @@
 		"watch:client": "tsc -w -p client/tsconfig.json",
 		"compile:server": "cd server && npm run installServer && cd .. && tsc -p server/tsconfig.json",
 		"watch:server": "cd server && npm run installServer && cd .. && tsc -w -p server/tsconfig.json"
-	},
-	"devDependencies": {
-        "@types/node": "^7.0.43",
-        "@types/mocha": "^2.2.42",
-		"typescript": "^2.5.2"
 	}
 }

@@ -31,43 +31,42 @@ import * as util from './util';
 
 
 
-declare module Config {
 
-    const SCOPE_DEFAULT = "default";
-
-    interface Root {
-        scopes: Scope[];
-    }
-
-    interface Scope {
-        name: string;
-        note: Note;
-        entry: Entry;
-    }
-
-    interface Page {
-        templates: InlineTemplate[];
-        path: string;
-        file: string;
-    }
-
-    interface Note extends Page { }
-    interface Entry extends Page { }
+const SCOPE_DEFAULT = "default";
 
 
+interface Root {
+    scopes: Scope[];
+}
+
+interface Scope {
+    name: string;
+    note: Note;
+    entry: Entry;
 }
 
 export interface InlineTemplate {
+    scope: string; 
     id: string;
     template: string;
     after: string;
 }
 
-function findScope(scopes: Config.Scope[], scopeId?: string): Config.Scope {
-    return scopes.find((val: Config.Scope) => {
-        let bool = val.name.startsWith(scopeId ? scopeId : Config.SCOPE_DEFAULT);
+interface Page {
+    templates: InlineTemplate[];
+    path: string;
+    file: string;
+}
 
-        return (val.name.startsWith(scopeId ? scopeId : Config.SCOPE_DEFAULT))
+interface Note extends Page { }
+interface Entry extends Page { }
+
+
+function findScope(scopes: Scope[], scopeId?: string): Scope {
+    return scopes.find((val: Scope) => {
+        let bool = val.name.startsWith(scopeId ? scopeId : SCOPE_DEFAULT);
+
+        return (val.name.startsWith(scopeId ? scopeId : SCOPE_DEFAULT))
     });
 }
 function findTemplate(templates: InlineTemplate[], templateId: string, ): InlineTemplate {
@@ -75,6 +74,9 @@ function findTemplate(templates: InlineTemplate[], templateId: string, ): Inline
 
     return result;
 }
+
+
+
 
 export class TemplateInfo {
     public template: string;
@@ -108,7 +110,7 @@ export class TemplateInfo {
  */
 export class Configuration {
 
-    private inlineTemplates: Config.Root = null;
+    private inlineTemplates: Root = null;
 
     constructor(public config: vscode.WorkspaceConfiguration) {
 
@@ -142,46 +144,74 @@ export class Configuration {
         }
     }
 
+    /**
+     * Returns a valid path, replaces variables with their counterparts
+     * @param pathStr 
+     */
+    private resolvePath(pathStr: string): string {
+        let result: string = pathStr; 
+        
+        pathStr.match(/\$\{.+\}/).forEach((token:string) => {
+            result = result.replace(token, this.replacePlaceholder(token)); 
+        }); 
 
-    public getConfigPath(): Q.Promise<string> {
-        let deferred: Q.Deferred<string> = Q.defer();
+        return result; 
 
-        let configDir = this.config.get<string>('configFiles');
+    }
 
-        if (configDir != null && configDir.length > 0) {
-            configDir = Path.resolve(configDir);
-        } else {
-            // default is .vscode in base (we want this folder to be synced)
-            configDir = Path.resolve(this.getBasePath(), ".vscode");
+    private replacePlaceholder(variableStr: string) {
+        switch (variableStr) {
+            case "${journalFolder}":
+                return this.getBasePath();
+            case "${date:}":
+            default:
+                throw new Error("Failed to susbstitute variable: " + variableStr);
         }
+    }
 
 
-        util.checkIfFileIsAccessible(configDir)
-            .catch((err) => {
-                return Q.nfcall(fs.mkdir, configDir)
-            })
-            .then(() => {
-                // check if page template is there
-                let filePath: string = Path.join(configDir, "journal.page-template.md");
-                return util.checkIfFileIsAccessible(filePath);
-            })
-            .catch((err) => {
-                // template not there, copy from extension directory
-                return this.initializeConfigDir(configDir);
-            })
-            .then(() => {
-                deferred.resolve(configDir);
-            })
-            .catch((err) => {
-                deferred.reject("Failed to initialize the configuration: " + err);
-            })
-            .done();
+    public getTemplatesDirectory(): Q.Promise<string> {
+        let deferred: Q.Deferred<string> = Q.defer();
+        Q.fcall(() => {
+            
+            let configDir = this.config.get<string>('templates-directory');
+
+            if (configDir != null && configDir.length > 0) {
+                configDir = this.resolvePath(configDir);
+            } else {
+                // default is .vscode in base (we want this folder to be synced)
+                configDir = Path.resolve(this.getBasePath(), ".vscode");
+            }
+
+
+            util.checkIfFileIsAccessible(configDir)
+                .catch((err) => {
+                    return Q.nfcall(fs.mkdir, configDir)
+                })
+                .then(() => {
+                    // check if page template is there
+                    let filePath: string = Path.join(configDir, "journal.page-template.md");
+                    return util.checkIfFileIsAccessible(filePath);
+                })
+                .catch((err) => {
+                    // template not there, copy from extension directory
+                    return this.initializeTemplateDir(configDir);
+                })
+                .then(() => {
+                    deferred.resolve(configDir);
+                })
+                .catch((err) => {
+                    deferred.reject("Failed to initialize the configuration: " + err);
+                })
+                .done();
+        });
+
 
 
         return deferred.promise;
     }
 
-    private initializeConfigDir(configDir: string): Q.Promise<void> {
+    private initializeTemplateDir(configDir: string): Q.Promise<void> {
         let deferred: Q.Deferred<void> = Q.defer();
 
         let ext: vscode.Extension<any> = vscode.extensions.getExtension("pajoma.vscode-journal");
@@ -225,9 +255,6 @@ export class Configuration {
             this.configFiles = new Map();
             this.configFiles.set("tpl.entry", { detail: "Template for journal entries", filename: "journal.page-template.md" });
             this.configFiles.set("tpl.note", { detail: "Template for notes", filename: "journal.note-template.md" });
-            this.configFiles.set("json.templates", { detail: "Inline templates", filename: "journal.inline-templates.json" });
-            this.configFiles.set("config", { detail: "Journal Configuration", filename: "journal.config.json" });
-
         }
 
         return this.configFiles;
@@ -241,31 +268,35 @@ export class Configuration {
     public getJournalEntryTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
 
-        this.getConfigPath()
+        this.getTemplatesDirectory()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("tpl.entry").filename), "utf-8"))
             .then((data: Buffer) => deferred.resolve(data.toString()))
             .catch((reason: any) => deferred.reject("Failed to get page template. Reason: " + reason));
         return deferred.promise;
     }
 
-    public getJournalHeaderTemplate(): string {
-        return "dddd, LL";
+    public getHeaderTemplate(_scopeId?: string): string {
+        let scopeId = _scopeId ? _scopeId : SCOPE_DEFAULT;
+        let templates: Array<InlineTemplate> = this.config.get("inline-templates"); 
+        return templates.find((entry: InlineTemplate) => entry.scope === scopeId+".entry.header").template; 
     }
 
 
     public getNotesTemplate(): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer();
 
-        this.getConfigPath()
+        this.getTemplatesDirectory()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("tpl.note").filename), "utf-8"))
             .then((data: Buffer) => deferred.resolve(data.toString()))
             .catch((reason: any) => deferred.reject("Failed to get note template. Reason: " + reason));
         return deferred.promise;
     }
 
-    public getJournalConfig(): Q.Promise<Config.Root> {
+    public getJournalConfig(): Q.Promise<Root> {
+        throw "Not yet implemented";
+        /*
         let deferred: Q.Deferred<any> = Q.defer();
-        this.getConfigPath()
+        this.getTemplatesDirectory()
             .then(configPath => Q.nfcall(fs.readFile, Path.join(configPath, this.getConfigFileDefinitions().get("config").filename), "utf-8"))
             .then((data: Buffer) => {
                 // strip comments
@@ -275,13 +306,14 @@ export class Configuration {
                 });
 
 
-                let tpl: Config.Root = JSON.parse(json);
+                let tpl: Root = JSON.parse(json);
 
                 this.inlineTemplates = tpl;
                 deferred.resolve(tpl);
             })
             .catch((reason: any) => deferred.reject("Failed to get journal configuration. Reason: " + reason));
         return deferred.promise;
+        */
     }
 
     /*
@@ -307,19 +339,14 @@ export class Configuration {
     public getMemoTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
         let deferred: Q.Deferred<InlineTemplate> = Q.defer();
 
-        this.getJournalConfig()
-            .then(val => {
-                let scope: Config.Scope = findScope(val.scopes, _scopeId);
-                let tpl: InlineTemplate = findTemplate(scope.entry.templates, "memo");
+        Q.fcall(() => {
+            let scopeId = _scopeId ? _scopeId : SCOPE_DEFAULT;
 
-                // template not found? fall back to default
-                if (!tpl) {
-                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "memo");
-                }
+            let templatesArray: InlineTemplate[] = this.config.get("inline-templates");
+            let result: InlineTemplate = templatesArray.find((tpl: InlineTemplate) => tpl.id === scopeId + ".entry.memo");
+            deferred.resolve(result);
+        })
 
-                deferred.resolve(tpl); 
-            })
-            .catch((err) => deferred.reject(err));
         return deferred.promise;
     }
 
@@ -328,12 +355,12 @@ export class Configuration {
 
         this.getJournalConfig()
             .then(val => {
-                let scope: Config.Scope = findScope(val.scopes, _scopeId);
+                let scope: Scope = findScope(val.scopes, _scopeId);
                 let tpl: InlineTemplate = findTemplate(scope.entry.templates, "file");
 
                 // template not found? fall back to default
                 if (!tpl) {
-                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "file");
+                    tpl = findTemplate(findScope(val.scopes, SCOPE_DEFAULT).entry.templates, "file");
                 }
 
                 deferred.resolve(tpl);
@@ -347,12 +374,12 @@ export class Configuration {
 
         this.getJournalConfig()
             .then(val => {
-                let scope: Config.Scope = findScope(val.scopes, _scopeId);
+                let scope: Scope = findScope(val.scopes, _scopeId);
                 let tpl: InlineTemplate = findTemplate(scope.entry.templates, "task");
 
                 // template not found? fall back to default
                 if (!tpl) {
-                    tpl = findTemplate(findScope(val.scopes, Config.SCOPE_DEFAULT).entry.templates, "task");
+                    tpl = findTemplate(findScope(val.scopes, SCOPE_DEFAULT).entry.templates, "task");
                 }
 
                 deferred.resolve(tpl);
@@ -361,6 +388,41 @@ export class Configuration {
         return deferred.promise;
 
     }
+
+    public getNotesFilePattern(_scopeId?: string): Q.Promise<string> {
+        let deferred: Q.Deferred<string> = Q.defer();
+
+        this.getJournalConfig()
+            .then(config => {
+                let scope: Scope = findScope(config.scopes, _scopeId);
+                try {
+                    deferred.resolve(scope.note.file);
+                } catch (error) {
+                    deferred.resolve(findScope(config.scopes, SCOPE_DEFAULT).note.file);
+                }
+            })
+            .catch(deferred.reject);
+
+        return deferred.promise;
+    }
+
+    public getNotesPathPattern(_scopeId?: string): Q.Promise<string> {
+        let deferred: Q.Deferred<string> = Q.defer();
+
+        this.getJournalConfig()
+            .then(config => {
+                let scope: Scope = findScope(config.scopes, _scopeId);
+                try {
+                    deferred.resolve(scope.note.file);
+                } catch (error) {
+                    deferred.resolve(findScope(config.scopes, SCOPE_DEFAULT).note.file);
+                }
+            })
+            .catch(deferred.reject);
+
+        return deferred.promise;
+    }
+
 
 
 

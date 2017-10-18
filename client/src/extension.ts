@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+import { Journal } from './journal';
 import * as vscode from 'vscode';
 
 
@@ -37,12 +38,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log('vscode-journal is starting!');
     
-
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    let journal = new J.Main(config);
 
-
-    journalStartup = new JournalStartup(context, journal);
+    journalStartup = new JournalStartup(context, config);
     journalStartup.registerCommands()
         // .then(() => journalStartup.runServer())
         // .then(() => journalStartup.registerViews())
@@ -50,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
         .then(() => journalStartup.setFinished())
         .catch((error) => {
             console.error(error);
-            journalStartup.showError(error);
+            throw error; 
         });
 
     
@@ -63,12 +61,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 class JournalStartup {
     private progress: Q.Deferred<boolean>;
+    private main: J.Journal; 
+    private commands: J.Extension.Commands; 
 
     /**
      *
      */
-    constructor(public context: vscode.ExtensionContext, public journal: J.Main) {
+    constructor(public context: vscode.ExtensionContext, public config: vscode.WorkspaceConfiguration) {
         this.progress = Q.defer<boolean>();
+        this.main = new J.JournalMain(config); 
+        this.commands = new J.Extension.JournalCommands(this.main); 
 
     }
 
@@ -108,7 +110,7 @@ class JournalStartup {
     public registerViews(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
-        let tasksView: J.Extension.TasksView = new J.Extension.TasksView(this.journal.getConfig());
+        let tasksView: J.Extension.TasksView = new J.Extension.TasksView(this.main.getConfig());
 
         tasksView.init()
             .then(() => {
@@ -124,31 +126,31 @@ class JournalStartup {
     public registerCommands(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
-        Q.fcall((_context, _journal) => {
+        Q.fcall((_commands: J.Extension.Commands, _context) => {
             _context.subscriptions.push(
                 vscode.commands.registerCommand('journal.today', () => {
-                    _journal.openDay(0).catch(error => this.showError(error));
+                    _commands.showEntry(0); 
                 }),
                 vscode.commands.registerCommand('journal.yesterday', () => {
-                    _journal.openDay(-1).catch(error => this.showError(error));
+                    _commands.showEntry(-1); 
                 }),
                 vscode.commands.registerCommand('journal.tomorrow', () => {
-                    _journal.openDay(1).catch(error => this.showError(error));
+                    _commands.showEntry(1); 
                 }),
                 vscode.commands.registerCommand('journal.day', () => {
-                    _journal.openDayByInput().catch(error => this.showError(error));
+                    _commands.processInput(); 
                 }),
                 vscode.commands.registerCommand('journal.memo', () => {
-                    _journal.openDayByInput().catch(error => this.showError(error));
+                    _commands.processInput(); 
                 }),
                 vscode.commands.registerCommand('journal.note', () => {
-                    _journal.createNote().catch(error => this.showError(error));
+                    _commands.showNote();  
                 }),
                 vscode.commands.registerCommand('journal.open', () => {
-                    _journal.openJournal().catch(error => this.showError(error));
+                    _commands.loadJournalWorkspace(); 
                 }),
                 vscode.commands.registerCommand('journal.config', () => {
-                    _journal.editTemplates().catch(error => this.showError(error));
+                    _commands.editJournalConfiguration(); 
                 }),
 
 
@@ -156,7 +158,7 @@ class JournalStartup {
 
             deferred.resolve(null);
 
-        }, this.context, this.journal);
+        }, this.commands, this.context);
 
         return deferred.promise;
 
@@ -165,7 +167,7 @@ class JournalStartup {
 
     public runServer(): Thenable<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
-        Q.fcall((_context, _journal) => {
+        Q.fcall((_context, _journal: Journal) => {
             try {
                 // see https://github.com/Microsoft/vscode-languageserver-node-example/blob/master/client/src/extension.ts
                 let serverModule = _context.asAbsolutePath(path.join('out', 'server', 'lang-server.js'));
@@ -201,7 +203,7 @@ class JournalStartup {
             }
         },
             this.context,
-            this.journal
+            this.main
         );
 
 
@@ -211,7 +213,7 @@ class JournalStartup {
     public configureDevMode(): Thenable<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
-        Q.fcall((_context, _journal) => {
+        Q.fcall((_context, _journal: Journal) => {
             if (_journal.getConfig().isDevEnabled()) {
                 _context.subscriptions.push(
                     vscode.commands.registerCommand('journal.test', function () {
@@ -233,7 +235,7 @@ class JournalStartup {
             }
             deferred.resolve(null); 
 
-        }, this.context, this.journal);
+        }, this.context, this.main);
         return deferred.promise;
     }
 
@@ -266,12 +268,6 @@ class JournalStartup {
         context.subscriptions.push(cmd2)
     }
 
-    public showError(error: string | Q.Promise<string>): void {
-        (<Q.Promise<string>>error).then((value) => {
-            // conflict between Q.IPromise and vscode.Thenable
-            vscode.window.showErrorMessage(value);
-        });
-    }
 
 }
 

@@ -37,10 +37,11 @@ import * as moment from 'moment';
 */
 export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
     let deferred: Q.Deferred<void> = Q.defer();
-    fs.access(path, (err) => {
-        if (err == null) deferred.resolve(null);
-        else deferred.reject(err.message);
-    });
+    Q.nfcall(fs.access, path)
+        .then( (err: NodeJS.ErrnoException) => {
+            if (err == null) deferred.resolve(null);
+            else deferred.reject(err.message);
+        }); 
     return deferred.promise;
 }
 

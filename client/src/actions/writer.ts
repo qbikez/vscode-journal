@@ -130,6 +130,17 @@ export class Writer {
     }
 
 
+    public saveDocument(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        doc.save()
+           .then(
+               success => deferred.resolve(doc), 
+               error => deferred.reject(error)
+           ); 
+
+        return deferred.promise; 
+    }
+
     public writeInputToFile(doc: vscode.TextDocument, pos: vscode.Position, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
