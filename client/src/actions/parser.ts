@@ -52,7 +52,7 @@ export class Parser {
                 this.today = new Date();
 
                 let res: RegExpMatchArray = this.split(value);
-                if (this.config.isDevEnabled()) console.log(JSON.stringify(res));
+                if (this.config.isDevelopmentModeEnabled()) console.log(JSON.stringify(res));
 
                 input.flags = this.getFlags(res);
                 input.offset = this.getOffset(res);
@@ -79,7 +79,7 @@ export class Parser {
 
                 deferred.resolve(input);
 
-                if (this.config.isDevEnabled()) console.log(JSON.stringify(input));
+                if (this.config.isDevelopmentModeEnabled()) console.log(JSON.stringify(input));
 
             } catch (error) {
                 deferred.reject(error); 
@@ -96,7 +96,7 @@ export class Parser {
             tokens = this.getNextWord(input);
 
             input = tokens[1];
-            if (this.config.isDevEnabled()) console.log(JSON.stringify(tokens));
+            if (this.config.isDevelopmentModeEnabled()) console.log(JSON.stringify(tokens));
 
             // check if token is temporal modifier
 
@@ -278,7 +278,7 @@ export class Parser {
         let shortcuts: string = "(today|tod|yesterday|yes|tomorrow|tom)\s";
 
 
-        if (this.config.isDevEnabled()) console.log("Resolving offset for \'", value, "\'");
+        if (this.config.isDevelopmentModeEnabled()) console.log("Resolving offset for \'", value, "\'");
 
         var deferred: Q.Deferred<number> = Q.defer<number>();
 
@@ -468,7 +468,7 @@ export class Parser {
             let remainder = "(.+)"
 
             let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
-            if (this.config.isDevEnabled()) console.log(completeExpression);
+            if (this.config.isDevelopmentModeEnabled()) console.log(completeExpression);
 
             this.expr = new RegExp(completeExpression);
         }

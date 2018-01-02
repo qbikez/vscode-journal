@@ -59,7 +59,7 @@ export class TasksView implements vscode.TreeDataProvider<TaskInView> {
 
     checkIfTaskFilePresent(_view: TasksView): Q.Promise<boolean> {
         var deferred: Q.Deferred<boolean> = Q.defer<boolean>();
-
+        
         this.config.getTemplatesDirectory()
             .then(configPath => J.Commons.checkIfFileIsAccessible(Path.join(configPath, "tasks.json")))
             .then(() => deferred.resolve(true))

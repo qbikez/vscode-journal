@@ -28,30 +28,28 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 
 const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'file' };
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-
 export var journalStartup: JournalStartup;
+
 export function activate(context: vscode.ExtensionContext) {
 
-    console.time("startup"); 
+    console.time("startup");
 
-    console.log('vscode-journal is starting!');
-    
+    console.log('[Journal] vscode-journal is starting!');
+
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 
     journalStartup = new JournalStartup(context, config);
     journalStartup.registerCommands()
         // .then(() => journalStartup.runServer())
         // .then(() => journalStartup.registerViews())
-        .then(() => journalStartup.configureDevMode())
+        //.then(() => journalStartup.configureDevMode())
         .then(() => journalStartup.setFinished())
         .catch((error) => {
             console.error(error);
-            throw error; 
+            throw error;
         });
 
-    
+
     return {
         extendMarkdownIt(md: any) {
             return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
@@ -61,21 +59,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 class JournalStartup {
     private progress: Q.Deferred<boolean>;
-    private main: J.Journal; 
-    private commands: J.Extension.Commands; 
+    private main: J.Journal;
+    private commands: J.Extension.Commands;
 
     /**
      *
      */
     constructor(public context: vscode.ExtensionContext, public config: vscode.WorkspaceConfiguration) {
         this.progress = Q.defer<boolean>();
-        this.main = new J.JournalMain(config); 
-        this.commands = new J.Extension.JournalCommands(this.main); 
+        this.main = new J.JournalMain(config);
+        this.commands = new J.Extension.JournalCommands(this.main);
 
     }
 
     public setFinished(): Q.Promise<boolean> {
-        this.progress.resolve(true);    
+        this.progress.resolve(true);
         console.timeEnd("startup")
 
         return this.progress.promise;
@@ -127,36 +125,39 @@ class JournalStartup {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
         Q.fcall((_commands: J.Extension.Commands, _context) => {
-            _context.subscriptions.push(
-                vscode.commands.registerCommand('journal.today', () => {
-                    _commands.showEntry(0); 
-                }),
-                vscode.commands.registerCommand('journal.yesterday', () => {
-                    _commands.showEntry(-1); 
-                }),
-                vscode.commands.registerCommand('journal.tomorrow', () => {
-                    _commands.showEntry(1); 
-                }),
-                vscode.commands.registerCommand('journal.day', () => {
-                    _commands.processInput(); 
-                }),
-                vscode.commands.registerCommand('journal.memo', () => {
-                    _commands.processInput(); 
-                }),
-                vscode.commands.registerCommand('journal.note', () => {
-                    _commands.showNote();  
-                }),
-                vscode.commands.registerCommand('journal.open', () => {
-                    _commands.loadJournalWorkspace(); 
-                }),
-                vscode.commands.registerCommand('journal.config', () => {
-                    _commands.editJournalConfiguration(); 
-                }),
-
-
-            );
-
-            deferred.resolve(null);
+            try {
+                _context.subscriptions.push(
+                    vscode.commands.registerCommand('journal.today', () => {
+                        _commands.showEntry(0);
+                    }),
+                    vscode.commands.registerCommand('journal.yesterday', () => {
+                        _commands.showEntry(-1);
+                    }),
+                    vscode.commands.registerCommand('journal.tomorrow', () => {
+                        _commands.showEntry(1);
+                    }),
+                    vscode.commands.registerCommand('journal.day', () => {
+                        _commands.processInput();
+                    }),
+                    vscode.commands.registerCommand('journal.memo', () => {
+                        _commands.processInput();
+                    }),
+                    vscode.commands.registerCommand('journal.note', () => {
+                        _commands.showNote();
+                    }),
+                    vscode.commands.registerCommand('journal.open', () => {
+                        _commands.loadJournalWorkspace();
+                    }),
+                    vscode.commands.registerCommand('journal.config', () => {
+                        _commands.editJournalConfiguration();
+                    }),
+                );
+    
+                deferred.resolve(null);
+                    
+            } catch (error) {
+                deferred.reject(error);                 
+            }
 
         }, this.commands, this.context);
 
@@ -214,7 +215,7 @@ class JournalStartup {
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
         Q.fcall((_context, _journal: Journal) => {
-            if (_journal.getConfig().isDevEnabled()) {
+            if (_journal.getConfig().isDevelopmentModeEnabled()) {
                 _context.subscriptions.push(
                     vscode.commands.registerCommand('journal.test', function () {
                         // The code you place here will be executed every time your command is executed
@@ -233,7 +234,7 @@ class JournalStartup {
                     })
                 );
             }
-            deferred.resolve(null); 
+            deferred.resolve(null);
 
         }, this.context, this.main);
         return deferred.promise;

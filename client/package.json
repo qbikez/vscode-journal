@@ -129,7 +129,7 @@
         "journal.base": {
           "type": "string",
           "default": "",
-          "description": "(Mandatatory) The base directory for your notes. "
+          "description": "(Mandatatory) The base directory for your notes. Defaults to (home)/journal "
         },
         "journal.templates-directory": {
           "type": "string",
@@ -152,17 +152,17 @@
             }
           ]
         },
-        "journal.inline-templates": {
+        "journal.templates": {
           "type": "array",
-          "description": "Inline templates for tasks, memos and more",
+          "description": "Templates for tasks, memos and more",
           "default": [
             {
-              "scope": "default.note.header",
-              "template": "${input}"
+              "scope": "default.note",
+              "template": "# ${input} \n \n"
             },
             {
-              "scope": "default.entry.header",
-              "template": "dddd, LL"
+              "scope": "default.entry",
+              "template": "# dddd, LL \n \n"
             },
             {
               "scope": "default.entry.task",

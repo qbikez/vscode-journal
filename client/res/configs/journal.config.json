@@ -30,7 +30,7 @@
                     },
                     {
                         "id": "file",
-                        "template": "- NOTE: [{label}]({file})",
+                        "template": "- NOTE: [${name}](${file})",
                         "after": "*Links*"
                     }
                 ],

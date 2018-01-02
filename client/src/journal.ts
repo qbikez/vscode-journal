@@ -23,6 +23,7 @@ import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from './';
 import * as moment from 'moment';
+import { Configuration } from './common/conf';
 
 export interface Journal {
     createJournalNote(path: string): Thenable<vscode.TextDocument>
@@ -36,6 +37,15 @@ export interface Journal {
 
     loadPageForInput(inputStr: string);
 }
+
+export const TemplateSubstitutes =
+    {
+        header: "${header}", 
+        baseDirectoryPath: "${base}", 
+        input: "${input}",
+        localDate: "${localDate}" 
+    }
+
 
 
 
@@ -66,7 +76,7 @@ export class JournalMain implements Journal {
             .then((_input: J.Model.Input) => {
                 input = _input;
                 return this.loadPageForOffset(input.offset);
-            })
+            }) d
             .then((doc: vscode.TextDocument) => {
                 return this.injectInput(input, doc);
             })
@@ -95,28 +105,27 @@ export class JournalMain implements Journal {
         let date = new Date();
         date.setDate(date.getDate() + offset);
 
+        this.getConfig().getEntryPathPattern().qweqwe
 
-        J.Commons.getEntryPathForDate(date, this.getConfig().getBasePath(), this.getConfig().getFileExtension())
+        J.Commons.getEntryPathForDate(date, this.getConfig().getBasePath(), )
             .then((path: string) => {
                 this.getVSCAdapter().loadTextDocument(path)
                     .then(deferred.resolve)
                     .catch(err => {
                         // failed to open text doc from url, create it
-                        this.config.getJournalEntryTemplate()
+                        this.config.getJournalEntryTemplate("default")
                             .then((tpl: string) => {
-                                let template: string = this.getConfig().getHeaderTemplate(); 
-                                let content: string = J.Commons.formatDate(date, template, this.getConfig().getLocale())
-                                return tpl.replace('${header}', content); 
+                                return  J.Commons.formatDate(date, tpl, this.getConfig().getLocale())
                             })
                             .then((content) => {
-                                return this.getVSCAdapter   ().createSaveLoadTextDocument(path, content)
+                                return this.getVSCAdapter().createSaveLoadTextDocument(path, content)
                             })
                             .then((doc: vscode.TextDocument) => deferred.resolve(doc))
-                            .catch(deferred.reject); 
+                            .catch(deferred.reject);
 
                     });
             })
-            
+
             .catch(err => deferred.reject(err));
 
         return deferred.promise;
@@ -131,7 +140,15 @@ export class JournalMain implements Journal {
 
         let content: string = null;
 
-        this.getConfig().getNotesTemplate()
+        // identify scopes in input
+        let scopeId = "default"; 
+        let rema: RegExpMatchArray = input.match(/#[\w]+/); 
+        if(rema.length > 0) scopeId = rema[0]; 
+
+        this.getConfig().getNotesTemplate(scopeId)
+            .then((template: string) => {
+                return template; 
+            })
             .then((template: string) => {
                 content = template.replace('${input}', input)
                 return J.Commons.normalizeFilename(input);
@@ -266,7 +283,7 @@ export class JournalMain implements Journal {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    if (this.config.isDevEnabled()) console.log("not present: " + file);
+                    if (this.config.isDevelopmentModeEnabled()) console.log("not present: " + file);
                     // construct local reference string
                     this.config.getFileLinkTemplate()
                         .then(tplInfo => {

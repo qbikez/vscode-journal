@@ -1,7 +1,7 @@
 export {
-    Configuration,
-    InlineTemplate
-} from './conf';
+    Configuration
+} from './config';
+
 
 export {
     checkIfFileIsAccessible,

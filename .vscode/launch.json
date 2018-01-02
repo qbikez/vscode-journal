@@ -10,9 +10,9 @@
 			// the folders listed here have to be created manually
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/client"
-				,"--extensionHomePath=${workspaceRoot}/../debug/extensions"
+				,"--extensionHomePath=${workspaceRoot}/../tests/extensions"
 				// ,"--user-data-dir=${workspaceRoot}/../debug/user-data"
-				,"${workspaceRoot}/../debug/workspace"
+				,"${workspaceRoot}/../tests/workspace/"
 
 			],
 			"stopOnEntry": false,
