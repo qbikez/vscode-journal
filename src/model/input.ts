@@ -31,7 +31,7 @@ export class Input {
     private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
-    private _scope: string = ""; 
+    private _scope?: string; 
     private _tags: string[] = []; 
 
  
@@ -75,7 +75,7 @@ export class Input {
      * Getter scope
      * @return {string }
      */
-	public get scope(): string  {
+	public get scope(): string | undefined  {
 		return this._scope;
 	}
 
@@ -111,7 +111,7 @@ export class Input {
      * Setter scope
      * @param {string } value
      */
-	public set scope(value: string ) {
+	public set scope(value: string | undefined) {
 		this._scope = value;
     }
 

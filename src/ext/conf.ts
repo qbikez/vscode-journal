@@ -110,6 +110,9 @@ export class Configuration {
     return [SCOPE_DEFAULT, ...scopes.map((sd) => sd.name)];
   }
 
+  public useLastScope(): boolean {
+    return this.config.get<boolean>("useLastScope", false);
+  } 
   /**
    * The base path, defaults to %USERPROFILE"/Journal
    *

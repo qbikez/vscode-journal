@@ -48,7 +48,7 @@ export class Parser {
    */
   public resolveNotePathForInput(
     input: J.Model.Input,
-    scopeId?: string
+    scope: string
   ): Q.Promise<string> {
     this.ctrl.logger.trace(
       "Entering resolveNotePathForInput() in actions/parser.ts"
@@ -65,9 +65,9 @@ export class Parser {
         this.ctrl.configuration.getNotesFilePattern(
           date,
           inputForFileName,
-          input.scope
+          scope
         ),
-        this.ctrl.configuration.getNotesPathPattern(date, input.scope),
+        this.ctrl.configuration.getNotesPathPattern(date, scope),
       ])
         .then(([fileTemplate, pathTemplate]) => {
           path = Path.resolve(pathTemplate.value!, fileTemplate.value!);
@@ -131,12 +131,13 @@ export class Parser {
 
         input.tags = Parser.extractTags(value);
         input.scope = this.extractScope(input);
-        
+
         // remove tags from text
-        input.tags.forEach(t => { input.text = input.text.replace(t, '')});
+        input.tags.forEach((t) => {
+          input.text = input.text.replace(t, "");
+        });
         // remove scope from tags
-        input.tags = input.tags.filter(t => t != `#${input.scope}`);
-        
+        input.tags = input.tags.filter((t) => t != `#${input.scope}`);
 
         // flags but no text, show error
         if (input.hasFlags() && !input.hasMemo()) {
@@ -166,14 +167,13 @@ export class Parser {
     });
   }
 
-  extractScope(input: J.Model.Input): string {
+  extractScope(input: J.Model.Input): string | undefined {
     const scopes = this.ctrl.configuration.getScopes();
     const scope =
-      scopes.find((name) => input.tags.find((t) => t.substring(1) == name)) ||
-      SCOPE_DEFAULT;
+      scopes.find((name) => input.tags.find((t) => t.substring(1) == name));
 
-    console.log("Identified scope in input: " + scope);
-
+    console.log(`Identified scope in input: ${scope}`);
+    
     return scope;
   }
 

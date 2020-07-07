@@ -26,6 +26,7 @@ import * as Q from 'q';
 import * as J from '../.';
 import { isNullOrUndefined } from 'util';
 import { pathToFileURL } from 'url';
+import { SCOPE_DEFAULT } from '../ext';
 
 interface InlineString {
     position: vscode.Position;
@@ -53,7 +54,7 @@ export class Inject {
      */
     public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
-
+        const scope = this.ctrl.getScope(input);
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!input.hasMemo() || !input.hasFlags()) {
@@ -61,21 +62,21 @@ export class Inject {
                     resolve(doc);
                 } else {
                     if (input.flags.match("memo")) {
-                        this.ctrl.config.getMemoInlineTemplate(input.scope)
+                        this.ctrl.config.getMemoInlineTemplate(scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
                             .catch((err) => reject(err));
 
                     } else if (input.flags.match("task")) {
-                        this.ctrl.config.getTaskInlineTemplate(input.scope)
+                        this.ctrl.config.getTaskInlineTemplate(scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
                             .catch((err) => reject(err));
 
                     } else if (input.flags.match("todo")) {
-                        this.ctrl.config.getTaskInlineTemplate(input.scope)
+                        this.ctrl.config.getTaskInlineTemplate(scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
@@ -91,8 +92,6 @@ export class Inject {
 
         });
     }
-
-
 
     /**
      * Writes content at the location configured in the Inline Template (the "after"-flag). If no after is present, 
@@ -274,7 +273,7 @@ export class Inject {
         return Q.Promise<string>((resolve, reject) => {
 
             // Fixme: add the tags inject them after header
-            this.ctrl.config.getNotesTemplate(input.scope)
+            this.ctrl.config.getNotesTemplate(this.ctrl.getScope(input))
                 .then((ft: J.Extension.HeaderTemplate) => {
                     ft.value = ft.value!.replace('${input}', input.text);
                     ft.value = ft.value!.replace('${tags}', input.tags.join(" ") + '\n');

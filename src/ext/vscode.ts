@@ -256,7 +256,7 @@ export class VSCode {
                         inputText.text = val; 
 
                         
-                    this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
+                    this.ctrl.parser.resolveNotePathForInput(inputText, scope).then(path => {
                             inputText.path = path; 
 
                             console.log("Tags in input string: "+inputText.tags+ " and scope "+inputText.scope);

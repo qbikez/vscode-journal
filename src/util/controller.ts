@@ -23,10 +23,9 @@
 import * as J from '../.';
 import * as vscode from 'vscode';
 import { isUndefined } from 'util';
+import { SCOPE_DEFAULT } from '../ext';
 
 export class Ctrl {
-
-
     private _config: J.Extension.Configuration;
     private _ui: J.Extension.VSCode;
     private _parser: J.Actions.Parser;
@@ -38,14 +37,16 @@ export class Ctrl {
 
 
     private _inject: J.Actions.Inject;
+    public globalSate: vscode.Memento;
 
-    constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
+    constructor(vscodeConfig: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
         this._config = new J.Extension.Configuration(vscodeConfig);
         this._parser = new J.Actions.Parser(this);
         this._writer = new J.Actions.Writer(this);
         this._reader = new J.Actions.Reader(this);
         this._inject = new J.Actions.Inject(this);
         this._ui = new J.Extension.VSCode(this);
+        this.globalSate = context.globalState;
     }
 
     /**
@@ -120,7 +121,14 @@ export class Ctrl {
      */
 	public set logger(value: J.Util.Logger) {
 		this._logger = value;
-	}
-
+    }
+    
+    public getScope(input: J.Model.Input): string {
+        const selectedScope = input.scope || (this.config.useLastScope() && this.globalSate.get('lastScope')) || SCOPE_DEFAULT;
+        this.globalSate.update('lastScope', selectedScope);
+        
+        return selectedScope;
+    }
+    
 
 }

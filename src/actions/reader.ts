@@ -386,7 +386,7 @@ export class Reader {
             throw Error("Not a valid value for offset");
         }
         this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
-        return this.ctrl.reader.loadEntryForDate(input.generateDate(), input.scope);
+        return this.ctrl.reader.loadEntryForDate(input.generateDate(), this.ctrl.getScope(input));
 
     }
 

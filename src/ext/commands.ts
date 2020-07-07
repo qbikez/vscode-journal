@@ -340,7 +340,7 @@ export class JournalCommands implements Commands {
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
             .then((input: J.Model.Input) =>
                 Q.all([
-                    this.ctrl.parser.resolveNotePathForInput(input),
+                    this.ctrl.parser.resolveNotePathForInput(input, this.ctrl.getScope(input)),
                     this.ctrl.inject.buildNoteContent(input)
                 ])
             )

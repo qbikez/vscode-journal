@@ -246,6 +246,11 @@
           "default": {},
           "description": "Define your own scopes here, see extension guide for more details. "
         },
+        "journal.useLastScope": {
+          "type": "boolean",
+          "default": false,
+          "description": "If enabled, will remember last used scope and use it as default."
+        },
         "journal.templates": {
           "type": "array",
           "default": [
