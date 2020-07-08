@@ -33,11 +33,13 @@ export class Input {
     private _text: string = ""; 
     private _scope?: string; 
     private _tags: string[] = []; 
+    public rawValue: string = "";
 
  
 
-    constructor(offset?: number) {
+    constructor(offset?: number, scope?: string) {
         this._offset = (isUndefined(offset)) ? 0 : offset; 
+        this.scope = scope;
     }
 
 

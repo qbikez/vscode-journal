@@ -30,7 +30,7 @@ import { isNotNullOrUndefined } from "../util";
 export class Parser {
   public today: Date;
   private expr: RegExp | undefined;
-  private static scopeExpression: RegExp = /(\s|^)(?<tag>#\w+)/g;
+  private static tagExpression: RegExp = /(\s|^)(?<tag>#\w*)/g;
 
   constructor(public ctrl: J.Util.Ctrl) {
     this.today = new Date();
@@ -125,6 +125,7 @@ export class Parser {
           reject("cancel");
         }
 
+        input.rawValue = value;
         input.flags = this.extractFlags(res!);
         input.offset = this.extractOffset(res!);
         input.text = this.extractText(res!);
@@ -169,11 +170,14 @@ export class Parser {
 
   extractScope(input: J.Model.Input): string | undefined {
     const scopes = this.ctrl.configuration.getScopes();
-    const scope =
-      scopes.find((name) => input.tags.find((t) => t.substring(1) == name));
+    const scope = scopes.find((name) =>
+      input.tags.find(
+        (t) => t.substring(1) === name || (t === "#" && name === SCOPE_DEFAULT) // treat # as selecting default scope
+      )
+    );
 
     console.log(`Identified scope in input: ${scope}`);
-    
+
     return scope;
   }
 
@@ -190,7 +194,7 @@ export class Parser {
   public static extractTags(value: string): string[] {
     let result: string[] = [];
     let match: RegExpMatchArray | null;
-    while ((match = Parser.scopeExpression.exec(value)) !== null) {
+    while ((match = Parser.tagExpression.exec(value)) !== null) {
       result.push(match.groups!["tag"]);
     }
 

@@ -54,7 +54,8 @@ export class Inject {
      */
     public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
-        const scope = this.ctrl.getScope(input);
+        const scope = this.ctrl.updateScope(input);
+
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!input.hasMemo() || !input.hasFlags()) {

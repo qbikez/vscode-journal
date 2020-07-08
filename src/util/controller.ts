@@ -123,12 +123,17 @@ export class Ctrl {
 		this._logger = value;
     }
     
-    public getScope(input: J.Model.Input): string {
-        const selectedScope = input.scope || (this.config.useLastScope() && this.globalSate.get('lastScope')) || SCOPE_DEFAULT;
-        this.globalSate.update('lastScope', selectedScope);
+    public getScope(input: J.Model.Input | null): string {
+        const selectedScope = input?.scope || (this.config.useLastScope() && this.globalSate.get('lastScope')) || SCOPE_DEFAULT;
         
         return selectedScope;
     }
-    
+
+    public updateScope(input: J.Model.Input) {
+        const scope = this.getScope(input);
+        this.globalSate.update('lastScope', scope);
+        
+        return scope;
+    }
 
 }
